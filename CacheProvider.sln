@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31010.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{6E0CD084-88CC-4D28-8CA3-239C0F2F7284}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheProvider", "src\CacheProvider\CacheProvider.csproj", "{64105F03-A068-4CA9-8861-B09253BFA5AB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheProvider.Mongo", "src\CacheProvider.Mongo\CacheProvider.Mongo.csproj", "{EE868CC3-C802-4C95-8800-2E7D2F3E9895}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{64105F03-A068-4CA9-8861-B09253BFA5AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64105F03-A068-4CA9-8861-B09253BFA5AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64105F03-A068-4CA9-8861-B09253BFA5AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64105F03-A068-4CA9-8861-B09253BFA5AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE868CC3-C802-4C95-8800-2E7D2F3E9895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE868CC3-C802-4C95-8800-2E7D2F3E9895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE868CC3-C802-4C95-8800-2E7D2F3E9895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE868CC3-C802-4C95-8800-2E7D2F3E9895}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
