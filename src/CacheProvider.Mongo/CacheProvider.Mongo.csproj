@@ -75,7 +75,7 @@
   <PropertyGroup>
     <PostBuildEvent>if $(ConfigurationName) == Debug copy "$(ProjectDir)bin\Debug\CacheProvider.Mongo.dll" "$(SolutionDir)dist"
 if $(ConfigurationName) == Release copy "$(ProjectDir)bin\Release\CacheProvider.Mongo.dll" "$(SolutionDir)dist"
-"$(SolutionDir).nuget\NuGet.exe" pack "$(SolutionDir)src\CacheProvider.Mongo\CacheProviderMongo.nuspec"
+"$(SolutionDir).nuget\NuGet.exe" pack "$(SolutionDir)src\CacheProvider.Mongo\CacheProvider.Mongo.nuspec"
 if $(ConfigurationName) == Debug copy "$(ProjectDir)bin\Debug\*.nupkg" "$(SolutionDir)dist"
 if $(ConfigurationName) == Release copy "$(ProjectDir)bin\Release\*.nupkg" "$(SolutionDir)dist"
 if $(ConfigurationName) == Debug del  "$(ProjectDir)bin\Debug\*.nupkg"
