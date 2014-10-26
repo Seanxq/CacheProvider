@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>CacheProviderMongo</id>
+        <version>1.0</version>
+        <title>CacheProviderMongo</title>
+        <authors>Chad England</authors>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Cache Provider that utilizes the Mongo Database</description>
+        <language>en-US</language>
+        <dependencies>
+            <dependency id="mongocsharpdriver" version="1.9.2" />
+        </dependencies>
+    </metadata>
+  <files>
+    
+        <file src="..\..\dist\CacheProvider.dll" target="lib\net45\CacheProvider.dll" />
+        <file src="..\..\dist\CacheProvider.Mongo.dll" target="lib\net45\CacheProvider.Mongo.dll" />
+    </files>
+</package>
