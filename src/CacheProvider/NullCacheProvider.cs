@@ -22,7 +22,7 @@ namespace CacheProvider
             return null;
         }
 
-        public Task<bool> Add(string cacheKey, object cacheObject, string optionalKey)
+        public Task<bool> Add(string cacheKey, object cacheObject, string optionalKey, int expirationInMinutes = 15)
         {
             return Task.FromResult(true);
         }
