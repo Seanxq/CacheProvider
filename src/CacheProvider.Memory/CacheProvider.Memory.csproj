@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{64105F03-A068-4CA9-8861-B09253BFA5AB}</ProjectGuid>
+    <ProjectGuid>{26174732-1756-45CD-ADE6-7690127AC9DA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CacheProvider</RootNamespace>
-    <AssemblyName>CacheProvider</AssemblyName>
+    <RootNamespace>CacheProvider.Memory</RootNamespace>
+    <AssemblyName>CacheProvider.Memory</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -33,6 +33,7 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -40,21 +41,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CacheProvider.cs" />
-    <Compile Include="Interface\ICacheProvider.cs" />
-    <Compile Include="MemoryStreamHelper.cs" />
-    <Compile Include="Model\BaseModel.cs" />
-    <Compile Include="NullCacheProvider.cs" />
+    <Compile Include="MemoryCacheProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CacheProvider\CacheProvider.csproj">
+      <Project>{64105f03-a068-4ca9-8861-b09253bfa5ab}</Project>
+      <Name>CacheProvider</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>if $(ConfigurationName) == Release copy "$(ProjectDir)bin\Release\CacheProvider.dll" "$(SolutionDir)dist"
-if $(ConfigurationName) == Debug copy "$(ProjectDir)bin\Debug\CacheProvider.dll" "$(SolutionDir)dist"</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>del "$(SolutionDir)dist\*.nupkg"</PreBuildEvent>
-  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

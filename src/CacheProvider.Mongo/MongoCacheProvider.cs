@@ -142,11 +142,11 @@ namespace CacheProvider.Mongo
             var formatter = new BinaryFormatter();
             var ms = new MemoryStream();
             formatter.Serialize(ms, cacheObject);
-
+            var expireTime = DateTime.UtcNow.AddMinutes(expireCacheTime);
             var item = new CacheItem
             {
                 CacheKey = cacheKey,
-                Expires = DateTime.UtcNow.AddMinutes(expireCacheTime),
+                Expires = expireTime,
                 CacheObject = ms.ToArray()
             };
 
