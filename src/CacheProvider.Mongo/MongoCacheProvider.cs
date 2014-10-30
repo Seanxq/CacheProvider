@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.Configuration;
-using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using CacheProvider.Mongo.Model;
 using MongoDB.Bson;
@@ -26,7 +24,7 @@ namespace CacheProvider.Mongo
             var timeout = config["timeout"];
             if (string.IsNullOrEmpty(timeout))
             {
-                throw new ConfigurationErrorsException("timeout must be set to the appropriate value");
+                timeout = "10";
             }
 
             _cacheExpirationTime = 60;
@@ -58,59 +56,63 @@ namespace CacheProvider.Mongo
                 host : MongoUtilities.GetMongoDatabaseString(host, port, baseDbName);
         }
 
-        private MongoCollection InitializeMongoDatabase(string tenantId)
-        {
-            var mongoDatabase = MongoUtilities.GetDatabaseFromUrl(new MongoUrl(_mongoConnectionString));
-            var mongoCollection = mongoDatabase.GetCollection(tenantId);
-            mongoCollection.CreateIndex("CacheKey");
-            return mongoCollection;
-        }
-
-        public override async Task<object> Get(string cacheKey, string tenantId)
+        /// <summary>
+        /// Get an object from cache if it exist
+        /// </summary>
+        /// <param name="cacheKey"></param>
+        /// <param name="region"></param>
+        /// <returns>object</returns>
+        public override async Task<object> Get(object cacheKey, string region)
         {
             if (!_isEnabled)
             {
                 return null;
             }
 
-            var mongoCollection = InitializeMongoDatabase(tenantId);
-
-            var item = await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>()
-                    .AsParallel()
-                    .FirstOrDefault(x => x.CacheKey.Equals(cacheKey, StringComparison.CurrentCultureIgnoreCase) && x.Expires > DateTime.UtcNow));
+            var item = await GetItem(cacheKey, region);
 
             if (item == null)
             {
                 return null;
             }
 
-            var formatter = new BinaryFormatter();
-            var ms = new MemoryStream(item.CacheObject);
-            object cacheOject = formatter.Deserialize(ms);
-            return cacheOject;
+            return await MemoryStreamHelper.DeserializeObject(item.CacheObject);
         }
 
-        public override async Task<T> Get<T>(string cacheKey, string tenantId)
+        /// <summary>
+        /// Get an object from cache if it exist
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cacheKey"></param>
+        /// <param name="region"></param>
+        /// <returns>cast object</returns>
+        public override async Task<T> Get<T>(object cacheKey, string region)
         {
             if (!_isEnabled)
             {
                 return default(T);
             }
 
-            var mongoCollection = InitializeMongoDatabase(tenantId);
-
-            var item = await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>()
-                    .AsParallel()
-                    .FirstOrDefault(x => x.CacheKey.Equals(cacheKey, StringComparison.CurrentCultureIgnoreCase) && x.Expires > DateTime.UtcNow));
+            var item = await GetItem(cacheKey, region);
 
             if (item == null)
             {
                 return default(T);
             }
 
-            var formatter = new BinaryFormatter();
-            var ms = new MemoryStream(item.CacheObject);
-            return (T)formatter.Deserialize(ms);
+            return (T) await MemoryStreamHelper.DeserializeObject(item.CacheObject);
+        }
+
+        public override async Task<bool> Exist(object cacheKey, string region)
+        {
+            if (!_isEnabled)
+            {
+                return false;
+            }
+
+            var item = await GetItem(cacheKey, region);
+
+            return item != null;
         }
 
         /// <summary>
@@ -118,56 +120,101 @@ namespace CacheProvider.Mongo
         /// </summary>
         /// <param name="cacheKey">The cache key.</param>
         /// <param name="cacheObject">The cache object.</param>
-        /// <param name="tenantId"></param>
+        /// <param name="region"></param>
         /// <param name="expirationInMinutes"></param>
         /// <returns>True if successful else false.</returns>
-        public override async Task<bool> Add(string cacheKey, object cacheObject, string tenantId, int expirationInMinutes = 15)
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region, int expirationInMinutes = 15)
         {
             if (!_isEnabled)
             {
                 return true;
             }
-            var mongoCollection = InitializeMongoDatabase(tenantId);
+
             var expireCacheTime = expirationInMinutes == 15 ? _cacheExpirationTime : expirationInMinutes;
 
-            if (await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>()
-                .AsParallel()
-                .FirstOrDefault(x => x.CacheKey.Equals(cacheKey, StringComparison.CurrentCultureIgnoreCase))) !=
-                null)
+            if (await GetItem(cacheKey, region) != null)
             {
-
-                await Remove(cacheKey, tenantId);
+                await Remove(cacheKey, region);
             }
 
-            var formatter = new BinaryFormatter();
-            var ms = new MemoryStream();
-            formatter.Serialize(ms, cacheObject);
             var expireTime = DateTime.UtcNow.AddMinutes(expireCacheTime);
             var item = new CacheItem
             {
-                CacheKey = cacheKey,
+                CacheKey = cacheKey.ToString(),
                 Expires = expireTime,
-                CacheObject = ms.ToArray()
+                CacheObject = await MemoryStreamHelper.SerializeObject(cacheObject)
             };
 
-            Task.Factory.StartNew(() => RemoveExpired(tenantId));
-            var results = await Task.Factory.StartNew(() => mongoCollection.Save(item));
-            return await VerifyReturnMessage(results);
+            return await CreateUpdateItem(region, item);
 
         }
 
-        public override async Task<bool> Remove(string cacheKey, string tenantId)
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region, bool allowSliddingTime, int expirationInMinutes = 15)
         {
             if (!_isEnabled)
             {
                 return true;
             }
 
-            var mongoCollection = InitializeMongoDatabase(tenantId);
+            var expireCacheTime = expirationInMinutes == 15 ? _cacheExpirationTime : expirationInMinutes;
+            var item = new CacheItem();
+            var exist = await GetItem(cacheKey, region);
 
-            var query = Query.EQ("cacheKey", cacheKey);
+            if (exist == null)
+            {
+                item.CacheKey = cacheKey.ToString();
+            }
+            else
+            {
+                item = exist;
+            }
+
+            var expireTime = DateTime.UtcNow.AddMinutes(expireCacheTime);
+            item.Expires = expireTime;
+
+            item.CacheObject = await MemoryStreamHelper.SerializeObject(cacheObject);
+            item.AllowSliddingTime = allowSliddingTime;
+
+            return await CreateUpdateItem(region, item);
+        }
+
+        
+
+        public override async Task<bool> AddPermanent(object cacheKey, object cacheObject, string region)
+        {
+            if (!_isEnabled)
+            {
+                return true;
+            }
+
+            if (await GetItem(cacheKey, region) != null)
+            {
+                await Remove(cacheKey, region);
+            }
+
+            var expireTime = DateTime.UtcNow.AddYears(100);
+            var item = new CacheItem
+            {
+                CacheKey = cacheKey.ToString(),
+                Expires = expireTime,
+                CacheObject = await MemoryStreamHelper.SerializeObject(cacheObject)
+            };
+
+            return await CreateUpdateItem(region, item);
+        }
+
+        public override async Task<bool> Remove(object cacheKey, string region)
+        {
+            if (!_isEnabled)
+            {
+                return true;
+            }
+
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+
+            var query = Query.EQ("cacheKey", cacheKey.ToString());
             var results = await Task.Factory.StartNew(() => mongoCollection.Remove(query));
-            return await VerifyReturnMessage(results);
+            return await MongoUtilities.VerifyReturnMessage(results);
         }
 
         public async override Task<bool> RemoveAll()
@@ -178,16 +225,16 @@ namespace CacheProvider.Mongo
             return true;
         }
 
-        public async override Task<bool> RemoveAll(string tenantId)
+        public async override Task<bool> RemoveAll(string region)
         {
             var mongoDatabase = MongoUtilities.GetDatabaseFromUrl(new MongoUrl(_mongoConnectionString));
-            await Task.Factory.StartNew(() => mongoDatabase.DropCollection(tenantId));
+            await Task.Factory.StartNew(() => mongoDatabase.DropCollection(region));
             return true;
         }
 
-        public async override Task<bool> RemoveExpired(string tenantId)
+        public async override Task<bool> RemoveExpired(string region)
         {
-            var mongoCollection = InitializeMongoDatabase(tenantId);
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
 
             var item = await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>().AsParallel().Where(x => x.Expires < DateTime.UtcNow).Select(x => x.Id));
 
@@ -196,51 +243,41 @@ namespace CacheProvider.Mongo
 
             if (item.Any())
             {
-               // todo add logging
+                // todo add logging
             }
 
             return true;
         }
 
-        private static async Task<bool> VerifyReturnMessage(GetLastErrorResult writeConcernResult)
+        public override async Task<long> Count(string region)
         {
-            return await Task.Factory.StartNew(() =>
-            {
-                if (writeConcernResult == null)
-                {
-                    return false;
-                }
-
-                if (string.IsNullOrEmpty(writeConcernResult.LastErrorMessage))
-                {
-                    return true;
-                }
-                return false;
-            });
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+            return await Task.Factory.StartNew(() => mongoCollection.Count());
         }
 
+        private async Task<bool> CreateUpdateItem(string region, CacheItem item)
+        {
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
 
+            Task.Factory.StartNew(() => RemoveExpired(region));
+            var results = await Task.Factory.StartNew(() => mongoCollection.Save(item));
+            return await MongoUtilities.VerifyReturnMessage(results);
+        }
 
+        private async Task<CacheItem> GetItem(object cacheKey, string region)
+        {
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
 
+            var item = await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>()
+                    .AsParallel()
+                    .FirstOrDefault(x => x.CacheKey.Equals(cacheKey.ToString(), StringComparison.CurrentCultureIgnoreCase) && x.Expires > DateTime.UtcNow));
 
+            if (!item.AllowSliddingTime) return item;
 
+            item.Expires = DateTime.UtcNow.AddMinutes(_cacheExpirationTime);
+            await CreateUpdateItem(region, item);
 
-
-
-
-
-
-
-
-
-
-
+            return item;
+        } 
     }
-
-
-
-
-
-
-
 }

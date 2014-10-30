@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MongoDB.Driver;
 
 namespace CacheProvider.Mongo
@@ -10,6 +11,14 @@ namespace CacheProvider.Mongo
             return string.IsNullOrWhiteSpace(port) ?
                 string.Format("mongodb://{0}/{2}", host, baseDbName) :
                 string.Format("mongodb://{0}:{1}/{2}", host, port, baseDbName);
+        }
+
+        public static MongoCollection InitializeMongoDatabase(string region, string mongoConnectionString)
+        {
+            var mongoDatabase = GetDatabaseFromUrl(new MongoUrl(mongoConnectionString));
+            var mongoCollection = mongoDatabase.GetCollection(region);
+            mongoCollection.CreateIndex("CacheKey");
+            return mongoCollection;
         }
 
         /// <summary>
@@ -49,6 +58,23 @@ namespace CacheProvider.Mongo
             }
 
             return GetDatabaseFromUrl(databaseString);
-        } 
+        }
+        
+        public static async Task<bool> VerifyReturnMessage(GetLastErrorResult writeConcernResult)
+        {
+            return await Task.Factory.StartNew(() =>
+            {
+                if (writeConcernResult == null)
+                {
+                    return false;
+                }
+
+                if (string.IsNullOrEmpty(writeConcernResult.LastErrorMessage))
+                {
+                    return true;
+                }
+                return false;
+            });
+        }
     }
 }
