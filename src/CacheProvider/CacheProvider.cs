@@ -1,4 +1,5 @@
-﻿using System.Configuration.Provider;
+﻿using System;
+using System.Configuration.Provider;
 using System.Threading.Tasks;
 using CacheProvider.Interface;
 

@@ -21,6 +21,9 @@ namespace CacheProvider.Memory
         {
         }
 
+        public MemoryCacheProvider(string cacheName)
+            :this(new MemoryCache(cacheName)){}
+
         private MemoryCacheProvider(MemoryCache cache)
         {
             _cache = cache;
@@ -75,7 +78,11 @@ namespace CacheProvider.Memory
                 return null;
             }
 
-            var item = (BaseModel)_cache.Get(MemoryUtilities.CombinedKey(cacheKey, region));
+            BaseModel item;
+            lock (Sync)
+            {
+                item = (BaseModel) _cache.Get(MemoryUtilities.CombinedKey(cacheKey, region));
+            }
 
             return await MemoryStreamHelper.DeserializeObject(item.CacheObject);
         }
@@ -187,7 +194,10 @@ namespace CacheProvider.Memory
                 Task.FromResult(true);
             }
 
-            _cache.Remove(MemoryUtilities.CombinedKey(cacheKey, region));
+            lock (Sync)
+            {
+                _cache.Remove(MemoryUtilities.CombinedKey(cacheKey, region));
+            }
             return Task.FromResult(true);
         }
 
@@ -202,8 +212,11 @@ namespace CacheProvider.Memory
                 Task.FromResult(true);
             }
 
-            _cache.Dispose();
-            _cache = MemoryCache.Default;
+            lock (Sync)
+            {
+                _cache.Dispose();
+                _cache = MemoryCache.Default;
+            }
             return Task.FromResult(true);
         }
 
@@ -236,8 +249,14 @@ namespace CacheProvider.Memory
             {
                 return 0;
             }
-
-           return await Task.Factory.StartNew(() => _cache.Count());
+           
+           return await Task.Factory.StartNew(() =>
+           {
+               lock (Sync)
+               {
+                   return _cache.Count();
+               }
+           });
         }
 
         #region Helpers
