@@ -32,7 +32,7 @@
         /// </summary>
         /// <param name="key">Key within specified domain</param>
         /// <param name="region">region to place the cache into</param>
-        private static string CombinedKey(object key, string region)
+        public static string CombinedKey(object key, string region)
         {
             return string.Format("{0}{1}{2}", string.IsNullOrEmpty(region) ? DefaultRegion : region, KeySeparator, key);
         }

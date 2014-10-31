@@ -11,26 +11,26 @@ namespace CacheProvider.Memory
     public class MemoryCacheProvider : CacheProvider
     {
         private static MemoryCache _cache;
-        private readonly CacheItemPolicy policy;
-        
 
         private int _cacheExpirationTime;
         private bool _isEnabled;
-        static readonly object _sync = new object();
+        private static readonly object Sync = new object();
 
         public MemoryCacheProvider()
             : this(MemoryCache.Default)
         {
         }
 
-        private MemoryCacheProvider(MemoryCache cache, int? slidingExpirationSeconds = 1800)
+        private MemoryCacheProvider(MemoryCache cache)
         {
             _cache = cache;
-            policy = new CacheItemPolicy();
-            var expirationSeconds = slidingExpirationSeconds.HasValue ? slidingExpirationSeconds.Value : 1800;
-            policy.SlidingExpiration = TimeSpan.FromSeconds(expirationSeconds);
         }
 
+        /// <summary>
+        ///     Initialize from config
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="config">Config properties</param>
         public override void Initialize(string name, NameValueCollection config)
         {
             base.Initialize(name, config);
@@ -59,40 +59,67 @@ namespace CacheProvider.Memory
                 throw new ConfigurationErrorsException("invalid timeout value");
             }
         }
-        
 
-        public override async Task<object> Get(string cacheKey, string optionalKey)
+        /// <summary>
+        ///     Get from cache.
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="region"></param>
+        /// <returns>
+        ///     An object instance with the Cache Value corresponding to the entry if found, else null
+        /// </returns>
+        public override async Task<object> Get(object cacheKey, string region)
         {
             if (!_isEnabled)
             {
                 return null;
             }
-            var key = optionalKey + cacheKey;
-            var item = (BaseModel)_cache.Get(key, optionalKey);
+
+            var item = (BaseModel)_cache.Get(MemoryUtilities.CombinedKey(cacheKey, region));
 
             return await MemoryStreamHelper.DeserializeObject(item.CacheObject);
         }
 
-        public override async Task<T> Get<T>(string cacheKey, string optionalKey)
+        /// <summary>
+        ///     Gets the specified cache key.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="region"></param>
+        /// <returns>An Instance of T if the entry is found, else null.</returns>
+        public override async Task<T> Get<T>(object cacheKey, string region)
         {
-            if (!_isEnabled)
-            {
-                return default(T);
-            }
-
-            var key = optionalKey + cacheKey;
-            var item = (BaseModel)_cache.Get(key, optionalKey);
-            return (T) await MemoryStreamHelper.DeserializeObject(item.CacheObject);
+            return (T) await Get(cacheKey, region);
         }
 
-        public override async Task<bool> Add(string cacheKey, object cacheObject, string optionalKey, int expirationInMinutes = 15)
+        /// <summary>
+        /// Check if the item exist
+        /// </summary>
+        /// <param name="cacheKey"></param>
+        /// <param name="region"></param>
+        /// <returns>true false</returns>
+        public override Task<bool> Exist(object cacheKey, string region)
+        {
+            return !_isEnabled ? 
+                Task.FromResult(false) : 
+                Task.FromResult(_cache[MemoryUtilities.CombinedKey(cacheKey, region)] != null);
+        }
+
+        /// <summary>
+        ///     Add to cache.
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region"></param>
+        /// <param name="expirationInMinutes"></param>
+        /// <returns>True if successful else false.</returns>
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region, int expirationInMinutes = 15)
         {
             if (!_isEnabled)
             {
                 return true;
             }
 
-            var key = optionalKey + cacheKey;
             var expireCacheTime = expirationInMinutes == 15 ? _cacheExpirationTime : expirationInMinutes;
 
             var cacheItemPolicy = new CacheItemPolicy
@@ -100,67 +127,143 @@ namespace CacheProvider.Memory
                 AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(expireCacheTime)
             };
 
-            var cacheData = await MemoryStreamHelper.SerializeObject(cacheObject);
+            return await CreateUpdateItem(cacheKey, cacheObject, region, expireCacheTime, cacheItemPolicy);
+        }
 
+        /// <summary>
+        ///     Add to cache.
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region"></param>
+        /// <param name="allowSliddingTime">Updates the expiration x minutes from last write or reed</param>
+        /// <param name="expirationInMinutes"></param>
+        /// <returns>True if successful else false.</returns>
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region, bool allowSliddingTime, int expirationInMinutes = 15)
+        {
+            if (!_isEnabled)
+            {
+                return true;
+            }
+
+            var expireCacheTime = expirationInMinutes == 15 ? _cacheExpirationTime : expirationInMinutes;
+            var cacheItemPolicy = new CacheItemPolicy
+            {
+                SlidingExpiration = TimeSpan.FromMinutes(expireCacheTime)
+            };
+
+            return await CreateUpdateItem(cacheKey, cacheObject, region, expireCacheTime, cacheItemPolicy, allowSliddingTime);
+        }
+
+        /// <summary>
+        ///     Add an item to the cache and will need to be removed manually
+        /// </summary>
+        /// <param name="cacheKey"></param>
+        /// <param name="cacheObject"></param>
+        /// <param name="region"></param>
+        /// <returns>true or false</returns>
+        public override async Task<bool> AddPermanent(object cacheKey, object cacheObject, string region)
+        {
+            if (!_isEnabled)
+            {
+                return true;
+            }
+
+            var cacheItemPolicy = new CacheItemPolicy();
+
+            return await CreateUpdateItem(cacheKey, cacheObject, region, 10000, cacheItemPolicy);
+        }
+
+        /// <summary>
+        ///     Remove from cache.(region not supported in memorycache)
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="region"></param>
+        /// <returns>True if successful else false.</returns>
+        public override Task<bool> Remove(object cacheKey, string region)
+        {
+            if (!_isEnabled)
+            {
+                Task.FromResult(true);
+            }
+
+            _cache.Remove(MemoryUtilities.CombinedKey(cacheKey, region));
+            return Task.FromResult(true);
+        }
+
+        /// <summary>
+        ///     Remove from cache.(region not supported in memorycache)
+        /// </summary>
+        /// <returns>True if successful else false.</returns>
+        public override Task<bool> RemoveAll()
+        {
+            if (!_isEnabled)
+            {
+                Task.FromResult(true);
+            }
+
+            _cache.Dispose();
+            _cache = MemoryCache.Default;
+            return Task.FromResult(true);
+        }
+
+        /// <summary>
+        ///     Remove from cache.(region not supported in memorycache)
+        /// </summary>
+        /// <param name="region"></param>
+        /// <returns>True if successful else false.</returns>
+        public override Task<bool> RemoveAll(string region)
+        {
+            return RemoveAll();
+        }
+
+        /// <summary>
+        ///     Remove from cache.(region not supported in memorycache)
+        /// </summary>
+        /// <param name="region"></param>
+        /// <returns>True if successful else false.</returns>
+        public override Task<bool> RemoveExpired(string region)
+        {
+            return RemoveAll();
+        }
+
+        /// <summary>
+        ///     Gets the cache count by region (region not supported in memorycache)
+        /// </summary>
+        public override async Task<long> Count(string region)
+        {
+            if (!_isEnabled)
+            {
+                return 0;
+            }
+
+           return await Task.Factory.StartNew(() => _cache.Count());
+        }
+
+        #region Helpers
+        private static async Task<bool> CreateUpdateItem(object cacheKey, object cacheObject, string region, int expireCacheTime, CacheItemPolicy cacheItemPolicy, bool allowSliddingTime = false)
+        {
+            var cacheData = await MemoryStreamHelper.SerializeObject(cacheObject);
+            var key = MemoryUtilities.CombinedKey(cacheKey, region);
             var expireTime = DateTime.UtcNow.AddMinutes(expireCacheTime);
             var item = new BaseModel
             {
                 CacheKey = key,
                 Expires = expireTime,
-                CacheObject = cacheData
+                CacheObject = cacheData,
+                AllowSliddingTime = allowSliddingTime
             };
 
             bool results;
-            lock (_sync)
+            lock (Sync)
             {
-                results = _cache.Add(key, item, cacheItemPolicy, optionalKey);
+                results = _cache.Add(key, item, cacheItemPolicy);
             }
 
-           
             return results;
         }
 
-        public override async Task<bool> Remove(string cacheKey, string optionalKey)
-        {
-            var key = optionalKey + cacheKey;
-            await Task.Factory.StartNew(() => _cache.Remove(key, optionalKey));
-            return true;
-        }
 
-        public override async Task<bool> RemoveAll()
-        {
-            var cacheKeys = _cache.Select(kvp => kvp.Key).ToList();
-            foreach (var ck in cacheKeys)
-            {
-                
-            }
-            throw new NotImplementedException();
-        }
-
-        public override async Task<bool> RemoveAll(string optionalKey)
-        {
-            var test = MemoryCache.Default.Select(kvp => kvp.Key).ToList();
-            var cacheKeys = _cache.Select(kvp => kvp.Key).ToList();
-            foreach (var ck in cacheKeys)
-            {
-                await Remove(ck, optionalKey);
-            }
-            return true;
-        }
-
-        public override Task<bool> RemoveExpired(string optionalKey)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override async Task<long> Count(string optionalKey)
-        {
-           return await Task.Factory.StartNew(() => _cache.GetCount(optionalKey));
-        }
-
-
-
-
-
+        #endregion
     }
 }
