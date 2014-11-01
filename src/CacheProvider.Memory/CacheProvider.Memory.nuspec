@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>CacheProvider.Memory</id>
+    <version>1.0</version>
+    <title>CacheProvider.Memory</title>
+    <authors>Chad England</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://github.com/chadit/CacheProvider</projectUrl>
+    <description>Cache Provider that utilizes .NET MemoryCache</description>
+    <language>en-US</language>
+  </metadata>
+  <files>
+    <file src="..\..\dist\CacheProvider.dll" target="lib\net45\CacheProvider.dll" />
+    <file src="..\..\dist\CacheProvider.Memory.dll" target="lib\net45\CacheProvider.Memory.dll" />
+  </files>
+</package>
