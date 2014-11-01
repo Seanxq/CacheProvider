@@ -55,7 +55,15 @@ namespace CacheProvider.Mongo
             }
 
             _isEnabled = true;
-            bool.TryParse(config["enable"], out _isEnabled);
+            var enabled = config["enable"];
+            if (enabled == null)
+            {
+                _isEnabled = true;
+            }
+            else
+            {
+                bool.TryParse(config["enable"], out _isEnabled);
+            }
 
             _mongoConnectionString = host.ToLower().StartsWith("mongodb://") ?
                 host : MongoUtilities.GetMongoDatabaseString(host, port, baseDbName);
@@ -226,7 +234,7 @@ namespace CacheProvider.Mongo
 
             var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
 
-            var query = Query.EQ("cacheKey", cacheKey.ToString());
+            var query = Query.EQ("CacheKey", cacheKey.ToString());
             var results = await Task.Factory.StartNew(() => mongoCollection.Remove(query));
             return await MongoUtilities.VerifyReturnMessage(results);
         }
@@ -325,7 +333,7 @@ namespace CacheProvider.Mongo
                     .AsParallel()
                     .FirstOrDefault(x => x.CacheKey.Equals(cacheKey.ToString(), StringComparison.CurrentCultureIgnoreCase) && x.Expires > DateTime.UtcNow));
 
-            if (!item.AllowSliddingTime) return item;
+            if (item == null || !item.AllowSliddingTime) return item;
 
             item.Expires = DateTime.UtcNow.AddMinutes(_cacheExpirationTime);
             await CreateUpdateItem(region, item);
