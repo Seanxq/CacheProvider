@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Threading.Tasks;
 using CacheProvider.Mongo;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -46,6 +45,26 @@ namespace CacheProvider.MongoTests
         }
 
         #region functionTest
+        [TestMethod]
+        public async Task GetItemThatDoesNotExistTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+
+            var results = await _cacheProvider.Get(key, "FirstRegion");
+            Assert.IsNull(results);
+        }
+
+        [TestMethod]
+        public async Task GetGenericItemThatDoesNotExistTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+
+            var results = await _cacheProvider.Get<object>(key, "FirstRegion");
+            Assert.IsNull(results);
+        }
+
         [TestMethod]
         public async Task AddItemsToCacheTest()
         {

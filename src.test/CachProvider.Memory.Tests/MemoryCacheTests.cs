@@ -38,6 +38,26 @@ namespace CachProvider.Memory.Tests
 
         #region functionTest
         [TestMethod]
+        public async Task GetItemThatDoesNotExistTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+
+            var results = await _cacheProvider.Get(key, "FirstRegion");
+            Assert.IsNull(results);
+        }
+
+        [TestMethod]
+        public async Task GetGenericItemThatDoesNotExistTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+
+            var results = await _cacheProvider.Get<object>(key, "FirstRegion");
+            Assert.IsNull(results);
+        }
+
+        [TestMethod]
         public async Task AddItemsToCacheTest()
         {
             _cacheProvider.Initialize("test", _enabledSettings);

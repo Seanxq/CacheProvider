@@ -84,6 +84,11 @@ namespace CacheProvider.Memory
                 item = (BaseModel) _cache.Get(MemoryUtilities.CombinedKey(cacheKey, region));
             }
 
+            if (item == null)
+            {
+                return null;
+            }
+
             return await MemoryStreamHelper.DeserializeObject(item.CacheObject);
         }
 
