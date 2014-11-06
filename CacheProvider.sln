@@ -22,6 +22,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CachProvider.Memory.Tests",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheProvider.MongoTests", "src.test\CacheProvider.MongoTests\CacheProvider.MongoTests.csproj", "{FE6E811C-9E11-4F8F-AA4E-CBDDD4D61099}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheProvider.Multi", "src\CacheProvider.Multi\CacheProvider.Multi.csproj", "{24DD64A3-81CA-432B-B9C8-0A8CB9A26F04}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheProviderMultiTests", "src.test\CacheProviderMultiTests\CacheProviderMultiTests.csproj", "{B2080B33-15F8-4170-8A69-4A35A53C63BB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +52,14 @@ Global
 		{FE6E811C-9E11-4F8F-AA4E-CBDDD4D61099}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE6E811C-9E11-4F8F-AA4E-CBDDD4D61099}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE6E811C-9E11-4F8F-AA4E-CBDDD4D61099}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24DD64A3-81CA-432B-B9C8-0A8CB9A26F04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24DD64A3-81CA-432B-B9C8-0A8CB9A26F04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24DD64A3-81CA-432B-B9C8-0A8CB9A26F04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24DD64A3-81CA-432B-B9C8-0A8CB9A26F04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2080B33-15F8-4170-8A69-4A35A53C63BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2080B33-15F8-4170-8A69-4A35A53C63BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2080B33-15F8-4170-8A69-4A35A53C63BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2080B33-15F8-4170-8A69-4A35A53C63BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,5 +67,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{4CA3B713-0ED6-4E06-9EDB-02E8E344354C} = {67AC8F07-BFC0-45CA-9AF2-B9F507946DAE}
 		{FE6E811C-9E11-4F8F-AA4E-CBDDD4D61099} = {67AC8F07-BFC0-45CA-9AF2-B9F507946DAE}
+		{B2080B33-15F8-4170-8A69-4A35A53C63BB} = {67AC8F07-BFC0-45CA-9AF2-B9F507946DAE}
 	EndGlobalSection
 EndGlobal
