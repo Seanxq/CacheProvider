@@ -2,15 +2,23 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Linq;
 using System.Threading.Tasks;
 using CacheProvider.Interface;
+using CacheProvider.Memory;
+using CacheProvider.Mongo;
 
 namespace CacheProvider.Multi
 {
-    public class MultiCacheProvider: CacheProvider
+    public class MultiCacheProvider : CacheProvider
     {
         private bool _isEnabled;
-        private List<ICacheProvider> _cacheProviders; 
+        public readonly List<Providers> CacheProviders;
+
+        public MultiCacheProvider()
+        {
+            CacheProviders = new List<Providers>();
+        }
 
         /// <summary>
         ///     Initialize from config
@@ -20,7 +28,7 @@ namespace CacheProvider.Multi
         public override void Initialize(string name, NameValueCollection config)
         {
             base.Initialize(name, config);
-           
+
             _isEnabled = true;
             var enabled = config["enable"];
             if (enabled == null)
@@ -32,20 +40,67 @@ namespace CacheProvider.Multi
                 bool.TryParse(config["enable"], out _isEnabled);
             }
 
+            var timeout = config["timeout"];
+            if (string.IsNullOrEmpty(timeout))
+            {
+                timeout = "20";
+            }
+
+            var cacheExpirationTime = 60;
+
+            if (!int.TryParse(timeout, out cacheExpirationTime))
+            {
+                throw new ConfigurationErrorsException("invalid timeout value");
+            }
+
             var providers = config["providers"];
             if (providers == null)
             {
                 throw new ConfigurationErrorsException("Missing providers list.. example memory,mongo");
             }
 
-            foreach (var c in providers.Split(','))
+            var providerOptions = providers.Split(',');
+            foreach (var provider in providerOptions.Select(c => c.Trim()).Where(provider => !string.IsNullOrWhiteSpace(provider)))
             {
-                var item = (ICacheProvider) System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(c);
+                switch (provider.ToLower())
+                {
+                    case "memorycacheprovider":
+                        var memoryProvider = new Providers
+                        {
+                            CacheProviders = new MemoryCacheProvider(),
+                            ValueCollection = config
+                        };
 
-                _cacheProviders.Add(item);
+                        memoryProvider.ValueCollection["timeout"] = (cacheExpirationTime / providerOptions.Count()).ToString();
+
+                        CacheProviders.Add(memoryProvider);
+                        break;
+
+                    case "mongocacheprovider":
+                        var mongoProvider = new Providers
+                        {
+                            CacheProviders = new MemoryCacheProvider(),
+                            ValueCollection = config
+                        };
+
+                        var mongoTimeSlice = providerOptions.Count();
+                        if (mongoTimeSlice < 1)
+                        {
+                            mongoTimeSlice = 1;
+                        }
+
+                        mongoProvider.ValueCollection["timeout"] = (cacheExpirationTime / mongoTimeSlice).ToString();
+
+                        CacheProviders.Add(mongoProvider);
+                        break;
+                }
             }
 
+            //if (c.Equals("MultiCacheProvider", StringComparison.CurrentCultureIgnoreCase)) continue;
+            //var test = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(c);
+            //ICacheProvider item = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(c);
 
+            //_cacheProviders.Add(item);
         }
 
 

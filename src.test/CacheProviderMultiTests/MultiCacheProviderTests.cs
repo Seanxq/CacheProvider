@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
+using CacheProvider.Mongo;
 using CacheProvider.Multi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -31,12 +33,20 @@ namespace CacheProviderMultiTests
                 {"providers", "MemoryCacheProvider, MongoCacheProvider"}
             };
 
-
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            _cacheProvider = new MultiCacheProvider();
+        }
 
 
         [TestMethod]
-        public void TestMethod1()
+        public async Task InitializationTest()
         {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            var items = _cacheProvider.CacheProviders;
+            Assert.AreEqual(items.Count, 2);
+
         }
     }
 }

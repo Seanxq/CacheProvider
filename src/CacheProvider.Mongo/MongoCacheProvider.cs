@@ -29,7 +29,7 @@ namespace CacheProvider.Mongo
             var timeout = config["timeout"];
             if (string.IsNullOrEmpty(timeout))
             {
-                timeout = "10";
+                timeout = "20";
             }
 
             _cacheExpirationTime = 60;
