@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using CacheProvider.Interface;
@@ -13,11 +14,11 @@ namespace CacheProvider.Multi
     public class MultiCacheProvider : CacheProvider
     {
         private bool _isEnabled;
-        public readonly List<Providers> CacheProviders;
+        public readonly List<ICacheProvider> CacheProviders;
 
         public MultiCacheProvider()
         {
-            CacheProviders = new List<Providers>();
+            CacheProviders = new List<ICacheProvider>();
         }
 
         /// <summary>
@@ -62,34 +63,26 @@ namespace CacheProvider.Multi
             var providerOptions = providers.Split(',');
             foreach (var provider in providerOptions.Select(c => c.Trim()).Where(provider => !string.IsNullOrWhiteSpace(provider)))
             {
+                NameValueCollection valueCollection = config;
+                int timeSlice = providerOptions.Count() + 1;
+                if (timeSlice < 1)
+                {
+                    timeSlice = 1;
+                }
+                valueCollection["timeout"] = (cacheExpirationTime / timeSlice).ToString(CultureInfo.InvariantCulture);
+
                 switch (provider.ToLower())
                 {
                     case "memorycacheprovider":
-                        var memoryProvider = new Providers
-                        {
-                            CacheProviders = new MemoryCacheProvider(),
-                            ValueCollection = config
-                        };
-
-                        memoryProvider.ValueCollection["timeout"] = (cacheExpirationTime / providerOptions.Count()).ToString();
+                        var memoryProvider = new MemoryCacheProvider();
+                        
+                        memoryProvider.Initialize(name, valueCollection);
 
                         CacheProviders.Add(memoryProvider);
                         break;
 
                     case "mongocacheprovider":
-                        var mongoProvider = new Providers
-                        {
-                            CacheProviders = new MemoryCacheProvider(),
-                            ValueCollection = config
-                        };
-
-                        var mongoTimeSlice = providerOptions.Count();
-                        if (mongoTimeSlice < 1)
-                        {
-                            mongoTimeSlice = 1;
-                        }
-
-                        mongoProvider.ValueCollection["timeout"] = (cacheExpirationTime / mongoTimeSlice).ToString();
+                        var mongoProvider = new MemoryCacheProvider();
 
                         CacheProviders.Add(mongoProvider);
                         break;
@@ -103,39 +96,42 @@ namespace CacheProvider.Multi
             //_cacheProviders.Add(item);
         }
 
-
-        /*
-         public interface IPreparer
-    {
-        void Run(Dictionary<string, object> data);
-    }
-
-    public interface IPreparerFactory : IFactory<IPreparer>
-    {
-        IPreparer GetInstance(string key);
-    }
-
-    public class UnityPreparerFactory : UnityFactory<IPreparer>, IPreparerFactory
-    {
-        public UnityPreparerFactory() : base(ServiceLayerConstants.DEFAULT_CONTAINER_NAME) { }
-
-        IPreparer IPreparerFactory.GetInstance(string key)
+        public override async Task<object> Get(object cacheKey, string region)
         {
-            return base.GetInstance(key.ToLower());
-        }
-    }
-          
-         */
+            if (!_isEnabled)
+            {
+                return null;
+            }
 
+            foreach (var cp in CacheProviders)
+            {
+                var obj = await cp.Get(cacheKey, region);
+                if (obj != null)
+                {
+                    return obj;
+                }
+            }
 
-        public override Task<object> Get(object cacheKey, string region)
-        {
-            throw new NotImplementedException();
+            return null;
         }
 
-        public override Task<T> Get<T>(object cacheKey, string region)
+        public override async Task<T> Get<T>(object cacheKey, string region)
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return null;
+            }
+
+            foreach (var cp in CacheProviders)
+            {
+                var obj = await Get(cacheKey, region);
+                if (obj != null)
+                {
+                    return (T) obj;
+                }
+            }
+
+            return null;
         }
 
         public override Task<bool> Exist(object cacheKey, string region)
