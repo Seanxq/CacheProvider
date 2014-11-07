@@ -117,9 +117,10 @@ namespace CacheProvider.Multi
 
         public override async Task<T> Get<T>(object cacheKey, string region)
         {
+            // todo call get instead of running this stuff.
             if (!_isEnabled)
             {
-                return null;
+                return default(T);
             }
 
             foreach (var cp in CacheProviders)
@@ -131,7 +132,7 @@ namespace CacheProvider.Multi
                 }
             }
 
-            return null;
+            return default(T);
         }
 
         public override Task<bool> Exist(object cacheKey, string region)
