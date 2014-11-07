@@ -13,21 +13,35 @@ namespace CacheProvider.Mongo
                 string.Format("mongodb://{0}:{1}/{2}", host, port, baseDbName);
         }
 
-        public static MongoCollection InitializeMongoDatabase(string region, string mongoConnectionString)
+        public static MongoCollection InitializeMongoDatabase(string region, string mongoConnectionString, MongoDatabase database)
         {
-            var mongoDatabase = GetDatabaseFromUrl(new MongoUrl(mongoConnectionString));
-            var mongoCollection = mongoDatabase.GetCollection(region);
-            mongoCollection.CreateIndex("CacheKey");
-            return mongoCollection;
+            MongoCollection collection;
+            if (database == null)
+            {
+                database = GetDatabaseFromUrl(new MongoUrl(mongoConnectionString), null);
+                collection = database.GetCollection(region);
+                collection.CreateIndex("CacheKey");
+            }
+            else
+            {
+                collection = database.GetCollection(region);
+            }
+
+            return collection;
         }
 
         /// <summary>
         ///     Gets the database from URL.
         /// </summary>
         /// <param name="url">The URL.</param>
+        /// <param name="database"></param>
         /// <returns>MongoDatabase.</returns>
-        public static MongoDatabase GetDatabaseFromUrl(MongoUrl url)
+        public static MongoDatabase GetDatabaseFromUrl(MongoUrl url, MongoDatabase database)
         {
+            if (database!= null)
+            {
+                return database;
+            }
             var client = new MongoClient(url);
             MongoServer server = client.GetServer();
             if (url.DatabaseName == null)
@@ -57,7 +71,7 @@ namespace CacheProvider.Mongo
                 databaseString = new MongoUrl(string.Format("mongodb://{0}:{1}/{2}", host, port, baseDbName));
             }
 
-            return GetDatabaseFromUrl(databaseString);
+            return GetDatabaseFromUrl(databaseString, null);
         }
         
         public static async Task<bool> VerifyReturnMessage(GetLastErrorResult writeConcernResult)

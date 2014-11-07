@@ -16,6 +16,17 @@ namespace CacheProvider.Mongo
         private string _mongoConnectionString;
         private int _cacheExpirationTime;
         private bool _isEnabled;
+        private readonly MongoDatabase _mongoDatabase;
+
+        public MongoCacheProvider()
+        {
+        }
+
+        public MongoCacheProvider(MongoDatabase database)
+        {
+            _mongoDatabase = database;
+        }
+
 
         /// <summary>
         ///     Initialize from config
@@ -232,7 +243,7 @@ namespace CacheProvider.Mongo
                 return true;
             }
 
-            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString, _mongoDatabase);
 
             var query = Query.EQ("CacheKey", cacheKey.ToString());
             var results = await Task.Factory.StartNew(() => mongoCollection.Remove(query));
@@ -252,7 +263,7 @@ namespace CacheProvider.Mongo
 
             await
                 Task.Factory.StartNew(
-                    () => MongoUtilities.GetDatabaseFromUrl(new MongoUrl(_mongoConnectionString)).Drop());
+                    () => MongoUtilities.GetDatabaseFromUrl(new MongoUrl(_mongoConnectionString), _mongoDatabase).Drop());
             return true;
         }
 
@@ -268,7 +279,7 @@ namespace CacheProvider.Mongo
                 return true;
             }
 
-            var mongoDatabase = MongoUtilities.GetDatabaseFromUrl(new MongoUrl(_mongoConnectionString));
+            var mongoDatabase = MongoUtilities.GetDatabaseFromUrl(new MongoUrl(_mongoConnectionString), _mongoDatabase);
             await Task.Factory.StartNew(() => mongoDatabase.DropCollection(region));
             return true;
         }
@@ -285,7 +296,7 @@ namespace CacheProvider.Mongo
                 return true;
             }
 
-            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString, _mongoDatabase);
 
             var item = await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>().AsParallel().Where(x => x.Expires < DateTime.UtcNow).Select(x => x.Id));
 
@@ -311,14 +322,14 @@ namespace CacheProvider.Mongo
             {
                 return 0;
             }
-            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString, _mongoDatabase);
             return await Task.Factory.StartNew(() => mongoCollection.Count());
         }
 
         #region Helpers
         private async Task<bool> CreateUpdateItem(string region, CacheItem item)
         {
-            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString, _mongoDatabase);
 
             Task.Factory.StartNew(() => RemoveExpired(region));
             var results = await Task.Factory.StartNew(() => mongoCollection.Save(item));
@@ -327,7 +338,7 @@ namespace CacheProvider.Mongo
 
         private async Task<CacheItem> GetItem(object cacheKey, string region)
         {
-            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString, _mongoDatabase);
 
             var item = await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>()
                     .AsParallel()

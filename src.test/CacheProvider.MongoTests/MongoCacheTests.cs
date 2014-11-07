@@ -1,7 +1,10 @@
 ﻿using System.Collections.Specialized;
+using System.Text;
 using System.Threading.Tasks;
 using CacheProvider.Mongo;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MongoDB.Driver;
+using Moq;
 
 namespace CacheProvider.MongoTests
 {
@@ -30,6 +33,25 @@ namespace CacheProvider.MongoTests
                 {"env", "UnitTest"},
                 {"enable", "false"}
             };
+
+        private readonly MongoServerSettings _serverSettings = new MongoServerSettings
+        {
+            GuidRepresentation = MongoDB.Bson.GuidRepresentation.Standard,
+            ReadEncoding = new UTF8Encoding(),
+            ReadPreference = new ReadPreference(),
+            WriteConcern = new WriteConcern(),
+            WriteEncoding = new UTF8Encoding()
+        };
+
+        private readonly MongoDatabaseSettings _databaseSettings = new MongoDatabaseSettings
+        {
+            GuidRepresentation = MongoDB.Bson.GuidRepresentation.Standard,
+            ReadEncoding = new UTF8Encoding(),
+            ReadPreference = new ReadPreference(),
+            WriteConcern = new WriteConcern(),
+            WriteEncoding = new UTF8Encoding()
+        };
+
 
         [TestInitialize]
         public void TestInitialize()
@@ -65,12 +87,37 @@ namespace CacheProvider.MongoTests
             Assert.IsNull(results);
         }
 
+        //http://blog.wjshome.com/how-to-mock-mongocollection-with-moq
+
         [TestMethod]
         public async Task AddItemsToCacheTest()
         {
-            _cacheProvider.Initialize("test", _enabledSettings);
             const string key = "TestKey";
             const string region = "FirstRegion";
+            
+
+            var message = string.Empty;
+            var server = new Mock<MongoServer>(_serverSettings);
+            server.Setup(s => s.Settings).Returns(_serverSettings);
+            server.Setup(s => s.IsDatabaseNameValid(It.IsAny<string>(), out message)).Returns(true);
+
+            var database = new Mock<MongoDatabase>(server.Object, "test", _databaseSettings);
+            database.Setup(db => db.Settings).Returns(_databaseSettings);
+            database.Setup(db => db.IsCollectionNameValid(It.IsAny<string>(), out message)).Returns(true);
+
+            var cache = new MongoCacheProvider(database.Object);
+            cache.Initialize("test", _enabledSettings);
+
+            var test = await cache.Add(key, new object(), region);
+            Assert.IsTrue(test);
+
+
+
+
+
+
+          //  _cacheProvider.Initialize("test", _enabledSettings);
+            
 
             if (await _cacheProvider.Add(key, new object(), region))
             {

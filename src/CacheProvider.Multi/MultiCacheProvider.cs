@@ -71,29 +71,23 @@ namespace CacheProvider.Multi
                 }
                 valueCollection["timeout"] = (cacheExpirationTime / timeSlice).ToString(CultureInfo.InvariantCulture);
 
+
+
                 switch (provider.ToLower())
                 {
                     case "memorycacheprovider":
                         var memoryProvider = new MemoryCacheProvider();
-                        
                         memoryProvider.Initialize(name, valueCollection);
-
                         CacheProviders.Add(memoryProvider);
                         break;
 
                     case "mongocacheprovider":
-                        var mongoProvider = new MemoryCacheProvider();
-
+                        var mongoProvider = new MongoCacheProvider();
+                        mongoProvider.Initialize(name, valueCollection);
                         CacheProviders.Add(mongoProvider);
                         break;
                 }
             }
-
-            //if (c.Equals("MultiCacheProvider", StringComparison.CurrentCultureIgnoreCase)) continue;
-            //var test = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(c);
-            //ICacheProvider item = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(c);
-
-            //_cacheProviders.Add(item);
         }
 
         public override async Task<object> Get(object cacheKey, string region)
@@ -117,32 +111,41 @@ namespace CacheProvider.Multi
 
         public override async Task<T> Get<T>(object cacheKey, string region)
         {
-            // todo call get instead of running this stuff.
+            return (T)await Get(cacheKey, region);
+        }
+
+        public override async Task<bool> Exist(object cacheKey, string region)
+        {
             if (!_isEnabled)
             {
-                return default(T);
+                return false;
             }
 
             foreach (var cp in CacheProviders)
             {
-                var obj = await Get(cacheKey, region);
-                if (obj != null)
+                if (await cp.Exist(cacheKey, region))
                 {
-                    return (T) obj;
+                    return true;
                 }
             }
 
-            return default(T);
+            return false;
         }
 
-        public override Task<bool> Exist(object cacheKey, string region)
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region, int expirationInMinutes = 15)
         {
-            throw new NotImplementedException();
-        }
+            if (!_isEnabled)
+            {
+                return false;
+            }
+            bool returnValue = false;
+            foreach (var cp in CacheProviders)
+            {
+                returnValue = await cp.Add(cacheKey, cacheObject, region, expirationInMinutes);
+            }
 
-        public override Task<bool> Add(object cacheKey, object cacheObject, string region, int expirationInMinutes = 15)
-        {
-            throw new NotImplementedException();
+            return returnValue;
+
         }
 
         public override Task<bool> Add(object cacheKey, object cacheObject, string region, bool allowSliddingTime, int expirationInMinutes = 15)
