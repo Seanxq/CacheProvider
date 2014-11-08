@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using CacheProvider.Mongo;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MongoDB.Driver;
-using Moq;
 
 namespace CacheProvider.MongoTests
 {
@@ -21,8 +20,6 @@ namespace CacheProvider.MongoTests
                 {"port","27017"},
                 {"env", "UnitTest"}
             };
-
-        // timeout=10;host=vmmongocluster1-1;port=27017;env=FrontEndApi;enable=true"
 
         private readonly NameValueCollection _disabledSettings = new NameValueCollection
             {
@@ -63,7 +60,7 @@ namespace CacheProvider.MongoTests
         [TestCleanup]
         public void TestCleanup()
         {
-           Task.FromResult( _cacheProvider.RemoveAll());
+            Task.FromResult(_cacheProvider.RemoveAll());
         }
 
         #region functionTest
@@ -87,47 +84,16 @@ namespace CacheProvider.MongoTests
             Assert.IsNull(results);
         }
 
-        //http://blog.wjshome.com/how-to-mock-mongocollection-with-moq
-
         [TestMethod]
         public async Task AddItemsToCacheTest()
         {
             const string key = "TestKey";
             const string region = "FirstRegion";
-            
 
-            var message = string.Empty;
-            var server = new Mock<MongoServer>(_serverSettings);
-            server.Setup(s => s.Settings).Returns(_serverSettings);
-            server.Setup(s => s.IsDatabaseNameValid(It.IsAny<string>(), out message)).Returns(true);
-
-            var database = new Mock<MongoDatabase>(server.Object, "test", _databaseSettings);
-            database.Setup(db => db.Settings).Returns(_databaseSettings);
-            database.Setup(db => db.IsCollectionNameValid(It.IsAny<string>(), out message)).Returns(true);
-
-            var cache = new MongoCacheProvider(database.Object);
-            cache.Initialize("test", _enabledSettings);
-
-            var test = await cache.Add(key, new object(), region);
-            Assert.IsTrue(test);
-
-
-
-
-
-
-          //  _cacheProvider.Initialize("test", _enabledSettings);
-            
-
-            if (await _cacheProvider.Add(key, new object(), region))
-            {
-                var count = await _cacheProvider.Count(region);
-                Assert.AreEqual(1, count);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            _cacheProvider.Initialize("test", _enabledSettings);
+            Assert.IsTrue(await _cacheProvider.Add(key, new object(), region));
+            var count = await _cacheProvider.Count(region);
+            Assert.AreEqual(1, count);
         }
 
         [TestMethod]
@@ -137,15 +103,9 @@ namespace CacheProvider.MongoTests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const string cacheObject = "test";
-            if (await _cacheProvider.Add(key, cacheObject, region))
-            {
-                var item = await _cacheProvider.Get(key, region);
-                Assert.AreEqual(item, cacheObject);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Get(key, region);
+            Assert.AreEqual(item, cacheObject);
         }
 
         [TestMethod]
@@ -175,16 +135,10 @@ namespace CacheProvider.MongoTests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            if (await _cacheProvider.Add(key, cacheObject, region))
-            {
-                var item = await _cacheProvider.Get<int>(key, region);
-                Assert.IsTrue(ReferenceEquals(item.GetType(), cacheObject.GetType()));
-                Assert.AreEqual(item, cacheObject);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Get<int>(key, region);
+            Assert.IsTrue(ReferenceEquals(item.GetType(), cacheObject.GetType()));
+            Assert.AreEqual(item, cacheObject);
         }
 
         [TestMethod]
@@ -194,15 +148,9 @@ namespace CacheProvider.MongoTests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            if (await _cacheProvider.Add(key, cacheObject, region))
-            {
-                var item = await _cacheProvider.Exist(key, region);
-                Assert.IsTrue(item);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Exist(key, region);
+            Assert.IsTrue(item);
         }
 
         [TestMethod]
@@ -213,16 +161,11 @@ namespace CacheProvider.MongoTests
             const string key1 = "TestKey1";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            if (await _cacheProvider.Add(key, cacheObject, region) && await _cacheProvider.Add(key1, cacheObject, region))
-            {
-                await _cacheProvider.Remove(key, region);
-                var item = await _cacheProvider.Exist(key, region);
-                Assert.IsFalse(item);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Add(key1, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Remove(key, region));
+            var item = await _cacheProvider.Exist(key, region);
+            Assert.IsFalse(item);
         }
         #endregion
 

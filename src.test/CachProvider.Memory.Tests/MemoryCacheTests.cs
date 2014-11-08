@@ -63,15 +63,9 @@ namespace CachProvider.Memory.Tests
             _cacheProvider.Initialize("test", _enabledSettings);
             const string key = "TestKey";
 
-            if (await _cacheProvider.Add(key, new object(), "FirstRegion"))
-            {
-                var count = await _cacheProvider.Count("");
-                Assert.AreEqual(1, count);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion"));
+            var count = await _cacheProvider.Count("");
+            Assert.AreEqual(1, count);
         }
 
         [TestMethod]
@@ -81,15 +75,10 @@ namespace CachProvider.Memory.Tests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const string cacheObject = "test";
-            if (await _cacheProvider.Add(key, cacheObject, region))
-            {
-                var item = await _cacheProvider.Get(key, region);
-                Assert.AreEqual(item, cacheObject);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Get(key, region);
+            Assert.AreEqual(item, cacheObject);
         }
 
         [TestMethod]
@@ -119,16 +108,11 @@ namespace CachProvider.Memory.Tests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            if (await _cacheProvider.Add(key, cacheObject, region))
-            {
-                var item = await _cacheProvider.Get<int>(key, region);
-                Assert.IsTrue(ReferenceEquals(item.GetType(), cacheObject.GetType()));
-                Assert.AreEqual(item, cacheObject);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Get<int>(key, region);
+            Assert.IsTrue(ReferenceEquals(item.GetType(), cacheObject.GetType()));
+            Assert.AreEqual(item, cacheObject);
         }
 
         [TestMethod]
@@ -138,15 +122,9 @@ namespace CachProvider.Memory.Tests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            if (await _cacheProvider.Add(key, cacheObject, region))
-            {
-                var item = await _cacheProvider.Exist(key, region);
-                Assert.IsTrue(item);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Exist(key, region);
+            Assert.IsTrue(item);
         }
 
         [TestMethod]
@@ -157,17 +135,11 @@ namespace CachProvider.Memory.Tests
             const string key1 = "TestKey1";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            if (await _cacheProvider.Add(key, cacheObject, region) &&
-                await _cacheProvider.Add(key1, cacheObject, region))
-            {
-                await _cacheProvider.Remove(key, region);
-                var item = await _cacheProvider.Exist(key, region);
-                Assert.IsFalse(item);
-            }
-            else
-            {
-                Assert.Fail();
-            }
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Add(key1, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Remove(key, region));
+            var item = await _cacheProvider.Exist(key, region);
+            Assert.IsFalse(item);
         }
         #endregion
 

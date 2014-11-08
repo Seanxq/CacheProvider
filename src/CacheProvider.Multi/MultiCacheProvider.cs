@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Globalization;
@@ -70,9 +69,7 @@ namespace CacheProvider.Multi
                     timeSlice = 1;
                 }
                 valueCollection["timeout"] = (cacheExpirationTime / timeSlice).ToString(CultureInfo.InvariantCulture);
-
-
-
+                
                 switch (provider.ToLower())
                 {
                     case "memorycacheprovider":
@@ -136,51 +133,152 @@ namespace CacheProvider.Multi
         {
             if (!_isEnabled)
             {
-                return false;
+                return true;
             }
-            bool returnValue = false;
+            var returnValue = true;
             foreach (var cp in CacheProviders)
             {
-                returnValue = await cp.Add(cacheKey, cacheObject, region, expirationInMinutes);
+                var wasAdded = await cp.Add(cacheKey, cacheObject, region, expirationInMinutes);
+                if (!wasAdded)
+                {
+                    returnValue = false;
+                }
             }
 
             return returnValue;
-
         }
 
-        public override Task<bool> Add(object cacheKey, object cacheObject, string region, bool allowSliddingTime, int expirationInMinutes = 15)
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region, bool allowSliddingTime, int expirationInMinutes = 15)
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return true;
+            }
+            var returnValue = true;
+            foreach (var cp in CacheProviders)
+            {
+                var wasAdded = await cp.Add(cacheKey, cacheObject, region, allowSliddingTime, expirationInMinutes);
+                if (!wasAdded)
+                {
+                    returnValue = false;
+                }
+            }
+
+            return returnValue;
         }
 
-        public override Task<bool> AddPermanent(object cacheKey, object cacheObject, string region)
+        public override async Task<bool> AddPermanent(object cacheKey, object cacheObject, string region)
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return true;
+            }
+            var returnValue = true;
+            foreach (var cp in CacheProviders)
+            {
+                var wasAdded = await cp.Add(cacheKey, cacheObject, region);
+                if (!wasAdded)
+                {
+                    returnValue = false;
+                }
+            }
+
+            return returnValue;
         }
 
-        public override Task<bool> Remove(object cacheKey, string region)
+        public override async Task<bool> Remove(object cacheKey, string region)
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return true;
+            }
+            var returnValue = true;
+            foreach (var cp in CacheProviders)
+            {
+                var wasAdded = await cp.Remove(cacheKey, region);
+                if (!wasAdded)
+                {
+                    returnValue = false;
+                }
+            }
+
+            return returnValue;
         }
 
-        public override Task<bool> RemoveAll()
+        public override async Task<bool> RemoveAll()
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return true;
+            }
+            var returnValue = true;
+            foreach (var cp in CacheProviders)
+            {
+                var wasAdded = await cp.RemoveAll();
+                if (!wasAdded)
+                {
+                    returnValue = false;
+                }
+            }
+
+            return returnValue;
         }
 
-        public override Task<bool> RemoveAll(string region)
+        public override async Task<bool> RemoveAll(string region)
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return true;
+            }
+            var returnValue = true;
+            foreach (var cp in CacheProviders)
+            {
+                var wasAdded = await cp.RemoveAll(region);
+                if (!wasAdded)
+                {
+                    returnValue = false;
+                }
+            }
+
+            return returnValue;
         }
 
-        public override Task<bool> RemoveExpired(string region)
+        public override async Task<bool> RemoveExpired(string region)
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return true;
+            }
+            var returnValue = true;
+            foreach (var cp in CacheProviders)
+            {
+                var wasAdded = await cp.RemoveExpired(region);
+                if (!wasAdded)
+                {
+                    returnValue = false;
+                }
+            }
+
+            return returnValue;
         }
 
-        public override Task<long> Count(string region)
+        public override async Task<long> Count(string region)
         {
-            throw new NotImplementedException();
+            if (!_isEnabled)
+            {
+                return 0;
+            }
+
+            long highCount = 0;
+            foreach (var cp in CacheProviders)
+            {
+                var count = await cp.Count(region);
+                if (highCount < count)
+                {
+                    highCount = count;
+                }
+            }
+            return highCount;
         }
     }
 }
