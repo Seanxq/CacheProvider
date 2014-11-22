@@ -41,9 +41,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CacheProvider.cs" />
+    <Compile Include="GlobalUtilities.cs" />
+    <Compile Include="Interface\ICacheModel.cs" />
+    <Compile Include="Interface\ICacheObject.cs" />
+    <Compile Include="Interface\ICacheOptions.cs" />
     <Compile Include="Interface\ICacheProvider.cs" />
     <Compile Include="MemoryStreamHelper.cs" />
     <Compile Include="Model\BaseModel.cs" />
+    <Compile Include="Model\CacheModel.cs" />
+    <Compile Include="Model\CacheObject.cs" />
+    <Compile Include="Model\CacheOptions.cs" />
     <Compile Include="NullCacheProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

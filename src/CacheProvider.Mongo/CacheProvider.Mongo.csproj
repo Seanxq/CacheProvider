@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Model\CacheItem.cs" />
+    <Compile Include="Model\MongoCachModel.cs" />
     <Compile Include="MongoCacheProvider.cs" />
     <Compile Include="MongoUtilities.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

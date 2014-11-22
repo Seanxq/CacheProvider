@@ -2,6 +2,7 @@
 using System.Collections.Specialized;
 using System.Threading.Tasks;
 using CacheProvider.Memory;
+using CacheProvider.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CachProvider.Memory.Tests
@@ -63,7 +64,7 @@ namespace CachProvider.Memory.Tests
             _cacheProvider.Initialize("test", _enabledSettings);
             const string key = "TestKey";
 
-            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion"));
+            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion", new CacheOptions()));
             var count = await _cacheProvider.Count("");
             Assert.AreEqual(1, count);
         }
@@ -76,11 +77,24 @@ namespace CachProvider.Memory.Tests
             const string region = "FirstRegion";
             const string cacheObject = "test";
 
-            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, new CacheOptions()));
             var item = await _cacheProvider.Get(key, region);
             Assert.AreEqual(item, cacheObject);
         }
 
+        [TestMethod]
+        public async Task AddAndGetValidationPassTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string region = "FirstRegion";
+            const string cacheObject = "test";
+            var validationKey = Guid.NewGuid().ToString();
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, new CacheOptions{Validator = validationKey}));
+            var item = await _cacheProvider.Get(key, region,validationKey);
+            Assert.AreEqual(item, cacheObject);
+        }
+        
         [TestMethod]
         public async Task AddSliderTest()
         {
@@ -88,7 +102,7 @@ namespace CachProvider.Memory.Tests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const string cacheObject = "test";
-            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, true));
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, new CacheOptions{AllowSliddingTime = true}));
         }
 
         [TestMethod]
@@ -98,7 +112,7 @@ namespace CachProvider.Memory.Tests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const string cacheObject = "test";
-            Assert.IsTrue(await _cacheProvider.AddPermanent(key, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.AddPermanent(key, cacheObject, region, new CacheOptions()));
         }
 
         [TestMethod]
@@ -109,7 +123,7 @@ namespace CachProvider.Memory.Tests
             const string region = "FirstRegion";
             const int cacheObject = 111;
 
-            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, new CacheOptions()));
             var item = await _cacheProvider.Get<int>(key, region);
             Assert.IsTrue(ReferenceEquals(item.GetType(), cacheObject.GetType()));
             Assert.AreEqual(item, cacheObject);
@@ -122,7 +136,7 @@ namespace CachProvider.Memory.Tests
             const string key = "TestKey";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, new CacheOptions()));
             var item = await _cacheProvider.Exist(key, region);
             Assert.IsTrue(item);
         }
@@ -135,8 +149,8 @@ namespace CachProvider.Memory.Tests
             const string key1 = "TestKey1";
             const string region = "FirstRegion";
             const int cacheObject = 111;
-            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
-            Assert.IsTrue(await _cacheProvider.Add(key1, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, new CacheOptions()));
+            Assert.IsTrue(await _cacheProvider.Add(key1, cacheObject, region, new CacheOptions()));
             Assert.IsTrue(await _cacheProvider.Remove(key, region));
             var item = await _cacheProvider.Exist(key, region);
             Assert.IsFalse(item);
@@ -151,7 +165,7 @@ namespace CachProvider.Memory.Tests
             _cacheProvider.Initialize("test", _disabledSettings);
             const string key = "TestKey";
 
-            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion"));
+            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion", new CacheOptions()));
         }
 
         [TestMethod]
@@ -160,7 +174,7 @@ namespace CachProvider.Memory.Tests
             _cacheProvider.Initialize("test", _disabledSettings);
             const string key = "TestKey";
 
-            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion", true));
+            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion", new CacheOptions{AllowSliddingTime = true}));
         }
 
         [TestMethod]
@@ -169,7 +183,7 @@ namespace CachProvider.Memory.Tests
             _cacheProvider.Initialize("test", _disabledSettings);
             const string key = "TestKey";
 
-            Assert.IsTrue(await _cacheProvider.AddPermanent(key, new object(), "FirstRegion"));
+            Assert.IsTrue(await _cacheProvider.AddPermanent(key, new object(), "FirstRegion", new CacheOptions()));
         }
 
         [TestMethod]
@@ -204,6 +218,127 @@ namespace CachProvider.Memory.Tests
         {
             _cacheProvider.Initialize("test", _disabledSettings);
             Assert.AreEqual(await _cacheProvider.Count("FirstRegion"), 0);
+        }
+        #endregion
+
+        // todo remove after dec
+        #region Obsolete test
+        [TestMethod]
+        public async Task ObsoleteGetItemThatDoesNotExistTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+
+            var results = await _cacheProvider.Get(key, "FirstRegion");
+            Assert.IsNull(results);
+        }
+
+        [TestMethod]
+        public async Task ObsoleteGetGenericItemThatDoesNotExistTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+
+            var results = await _cacheProvider.Get<object>(key, "FirstRegion");
+            Assert.IsNull(results);
+        }
+
+        [TestMethod]
+        public async Task ObsoleteAddItemsToCacheTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+
+            Assert.IsTrue(await _cacheProvider.Add(key, new object(), "FirstRegion"));
+            var count = await _cacheProvider.Count("");
+            Assert.AreEqual(1, count);
+        }
+
+        [TestMethod]
+        public async Task ObsoleteAddAndGetTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string region = "FirstRegion";
+            const string cacheObject = "test";
+
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Get(key, region);
+            Assert.AreEqual(item, cacheObject);
+        }
+
+        [TestMethod]
+        public async Task ObsoleteAddAndGetValidationPassTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string region = "FirstRegion";
+            const string cacheObject = "test";
+            var validationKey = Guid.NewGuid().ToString();
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Get(key, region, validationKey);
+            Assert.AreEqual(item, cacheObject);
+        }
+
+        [TestMethod]
+        public async Task ObsoleteAddSliderTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string region = "FirstRegion";
+            const string cacheObject = "test";
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+        }
+
+        [TestMethod]
+        public async Task ObsoleteAddPermTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string region = "FirstRegion";
+            const string cacheObject = "test";
+            Assert.IsTrue(await _cacheProvider.AddPermanent(key, cacheObject, region));
+        }
+
+        [TestMethod]
+        public async Task ObsoleteAddAndGetCastTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string region = "FirstRegion";
+            const int cacheObject = 111;
+
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Get<int>(key, region);
+            Assert.IsTrue(ReferenceEquals(item.GetType(), cacheObject.GetType()));
+            Assert.AreEqual(item, cacheObject);
+        }
+
+        [TestMethod]
+        public async Task ObsoleteAddAndExistTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string region = "FirstRegion";
+            const int cacheObject = 111;
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            var item = await _cacheProvider.Exist(key, region);
+            Assert.IsTrue(item);
+        }
+
+        [TestMethod]
+        public async Task ObsoleteRemoveTest()
+        {
+            _cacheProvider.Initialize("test", _enabledSettings);
+            const string key = "TestKey";
+            const string key1 = "TestKey1";
+            const string region = "FirstRegion";
+            const int cacheObject = 111;
+            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Add(key1, cacheObject, region));
+            Assert.IsTrue(await _cacheProvider.Remove(key, region));
+            var item = await _cacheProvider.Exist(key, region);
+            Assert.IsFalse(item);
         }
         #endregion
     }

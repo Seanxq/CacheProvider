@@ -12,13 +12,22 @@ namespace CacheProvider.Mongo
                 string.Format("mongodb://{0}/{2}", host, baseDbName) :
                 string.Format("mongodb://{0}:{1}/{2}", host, port, baseDbName);
         }
-
+        
         public static MongoCollection InitializeMongoDatabase(string region, string mongoConnectionString)
         {
-            var mongoDatabase = GetDatabaseFromUrl(new MongoUrl(mongoConnectionString));
-            var mongoCollection = mongoDatabase.GetCollection(region);
+            var mongoCollection = GetMongoCollection(region, GetMongoDataBase(mongoConnectionString));
             mongoCollection.CreateIndex("CacheKey");
             return mongoCollection;
+        }
+
+        public static MongoDatabase GetMongoDataBase(string mongoConnectionString)
+        {
+            return GetDatabaseFromUrl(new MongoUrl(mongoConnectionString));
+        }
+
+        public static MongoCollection GetMongoCollection(string region, MongoDatabase database)
+        {
+            return database.GetCollection(region);
         }
 
         /// <summary>

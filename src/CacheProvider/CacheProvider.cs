@@ -16,6 +16,16 @@ namespace CacheProvider
         ///     An object instance with the Cache Value corresponding to the entry if found, else null
         /// </returns>
         public abstract Task<object> Get(object cacheKey, string region);
+        /// <summary>
+        ///     Get from cache. (does not work with obsolete fields)
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
+        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
+        /// <returns>
+        ///     An object instance with the Cache Value corresponding to the entry if found, else null
+        /// </returns>
+        public abstract Task<object> Get(object cacheKey, string region, string validationKey);
 
         /// <summary>
         ///     Gets the specified cache key (Async).
@@ -25,6 +35,16 @@ namespace CacheProvider
         /// <param name="region"></param>
         /// <returns>An Instance of T if the entry is found, else null.</returns>
         public abstract Task<T> Get<T>(object cacheKey, string region);
+        /// <summary>
+        ///     Get from cache. (does not work with obsolete fields)
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
+        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
+        /// <returns>
+        ///     An object instance with the Cache Value corresponding to the entry if found, else null
+        /// </returns>
+        public abstract Task<T> Get<T>(object cacheKey, string region, string validationKey);
 
         /// <summary>
         /// Check if the item exist
@@ -34,6 +54,31 @@ namespace CacheProvider
         /// <returns>true false</returns>
         public abstract Task<bool> Exist(object cacheKey, string region);
 
+        #region Add
+        /// <summary>
+        ///     Add an item to the cache and will need to be removed manually
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
+        /// <param name="options">Options that can be set for the cache</param>
+        /// <returns>true or false</returns>
+        public abstract Task<bool> Add(object cacheKey, object cacheObject, string region, ICacheOptions options);
+
+        /// <summary>
+        ///     Add an item to the cache and will need to be removed manually
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
+        /// <param name="options">Options that can be set for the cache</param>
+        /// <returns>true or false</returns>
+        public abstract Task<bool> AddPermanent(object cacheKey, object cacheObject, string region, ICacheOptions options);
+        #endregion
+
+
+        // todo remove after Dec
+        #region Add obsolete
         /// <summary>
         ///     Add to cache.
         /// </summary>
@@ -42,6 +87,7 @@ namespace CacheProvider
         /// <param name="region"></param>
         /// <param name="expirationInMinutes"></param>
         /// <returns>True if successful else false.</returns>
+        [Obsolete("will be removed after December, use the other Add with options")]
         public abstract Task<bool> Add(object cacheKey, object cacheObject, string region, int expirationInMinutes = 15);
 
         /// <summary>
@@ -53,6 +99,7 @@ namespace CacheProvider
         /// <param name="allowSliddingTime">Updates the expiration x minutes from last write or reed</param>
         /// <param name="expirationInMinutes"></param>
         /// <returns>True if successful else false.</returns>
+        [Obsolete("will be removed after December, use the other Add with options")]
         public abstract Task<bool> Add(object cacheKey, object cacheObject, string region, bool allowSliddingTime, int expirationInMinutes = 15);
 
         /// <summary>
@@ -62,8 +109,10 @@ namespace CacheProvider
         /// <param name="cacheObject"></param>
         /// <param name="region"></param>
         /// <returns>true or false</returns>
+        [Obsolete("will be removed after December, use the other AddPermanent overload")]
         public abstract Task<bool> AddPermanent(object cacheKey, object cacheObject, string region);
-
+        #endregion
+        
         /// <summary>
         ///     Remove from cache.
         /// </summary>

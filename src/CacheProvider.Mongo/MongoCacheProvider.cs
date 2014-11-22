@@ -3,6 +3,8 @@ using System.Collections.Specialized;
 using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
+using CacheProvider.Interface;
+using CacheProvider.Model;
 using CacheProvider.Mongo.Model;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -17,6 +19,7 @@ namespace CacheProvider.Mongo
         private int _cacheExpirationTime;
         private bool _isEnabled;
 
+        #region Init
         /// <summary>
         ///     Initialize from config
         /// </summary>
@@ -69,6 +72,9 @@ namespace CacheProvider.Mongo
                 host : MongoUtilities.GetMongoDatabaseString(host, port, baseDbName);
         }
 
+        #endregion
+
+        #region Get/Exist/Count
         /// <summary>
         ///     Get from cache.
         /// </summary>
@@ -84,14 +90,61 @@ namespace CacheProvider.Mongo
                 return null;
             }
 
-            var item = await GetItem(cacheKey, region);
+            object item = await GetItem(cacheKey, region);
 
             if (item == null)
             {
                 return null;
             }
 
-            return await MemoryStreamHelper.DeserializeObject(item.CacheObject);
+            // todo remove after dec when obsolete methods are removed
+            var itemType = item.GetType();
+            if (itemType == typeof(CacheItem))
+            {
+                var obj = (CacheItem)item;
+                return await MemoryStreamHelper.DeserializeObject(obj.CacheObject);
+            }
+
+            if (itemType == typeof(MongoCachModel))
+            {
+                var obj1 = (MongoCachModel)item;
+                return await MemoryStreamHelper.DeserializeObject(obj1.CacheObject.Item);
+            }
+            return null;
+        }
+
+        public override async Task<object> Get(object cacheKey, string region, string validationKey)
+        {
+            if (!_isEnabled)
+            {
+                return null;
+            }
+
+            object item = await GetItem(cacheKey, region);
+
+            if (item == null)
+            {
+                return null;
+            }
+
+            // todo remove after dec when obsolete methods are removed
+            var itemType = item.GetType();
+            if (itemType == typeof(CacheItem))
+            {
+                var obj = (CacheItem)item;
+                return await MemoryStreamHelper.DeserializeObject(obj.CacheObject);
+            }
+
+            if (itemType == typeof(MongoCachModel))
+            {
+                var obj1 = (MongoCachModel)item;
+
+                if (obj1.CacheObject.Validator == validationKey)
+                {
+                    return await MemoryStreamHelper.DeserializeObject(obj1.CacheObject.Item);
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -103,7 +156,12 @@ namespace CacheProvider.Mongo
         /// <returns>An Instance of T if the entry is found, else null.</returns>
         public override async Task<T> Get<T>(object cacheKey, string region)
         {
-            return (T) await Get(cacheKey, region);
+            return (T)await Get(cacheKey, region);
+        }
+
+        public override async Task<T> Get<T>(object cacheKey, string region, string validationKey)
+        {
+            return (T)await Get(cacheKey, region, validationKey);
         }
 
         /// <summary>
@@ -118,6 +176,102 @@ namespace CacheProvider.Mongo
         }
 
         /// <summary>
+        /// get the count of items in a cache region
+        /// </summary>
+        /// <param name="region"></param>
+        /// <returns></returns>
+        public override async Task<long> Count(string region)
+        {
+            if (!_isEnabled)
+            {
+                return 0;
+            }
+            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
+            return await Task.Factory.StartNew(() => mongoCollection.Count());
+        }
+        #endregion
+
+        #region Add
+        /// <summary>
+        ///     Add to cache.
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
+        /// <param name="options">Options that can be set for the cache</param>
+        /// <returns>True if successful else false.</returns>
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region, ICacheOptions options)
+        {
+            if (!_isEnabled)
+            {
+                return true;
+            }
+
+            var expireCacheTime = options.ExpirationInMinutes == 15 ? _cacheExpirationTime : options.ExpirationInMinutes;
+
+            if (await Get(cacheKey, region) != null)
+            {
+                await Remove(cacheKey, region);
+            }
+
+            var expireTime = DateTime.UtcNow.AddMinutes(expireCacheTime);
+            var item = new MongoCachModel
+            {
+                CacheKey = cacheKey.ToString(),
+                Expires = expireTime,
+                CacheObject = new CacheObject
+                {
+                    Validator = options.Validator, 
+                    Item = await MemoryStreamHelper.SerializeObject(cacheObject)
+                },
+                CacheOptions = options
+            };
+
+            return await CreateUpdateItem(region, item);
+        }
+
+        /// <summary>
+        ///     Add an item to the cache and will need to be removed manually
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
+        /// <param name="options">Options that can be set for the cache</param>
+        /// <returns>true or false</returns>
+        public override async Task<bool> AddPermanent(object cacheKey, object cacheObject, string region, ICacheOptions options)
+        {
+            if (!_isEnabled)
+            {
+                return true;
+            }
+
+            if (await Get(cacheKey, region) != null)
+            {
+                await Remove(cacheKey, region);
+            }
+
+            var expireTime = DateTime.UtcNow.AddYears(100);
+            var item = new MongoCachModel
+            {
+                CacheKey = cacheKey.ToString(),
+                Expires = expireTime,
+                CacheObject = new CacheObject
+                {
+                    Validator = options.Validator,
+                    Item = await MemoryStreamHelper.SerializeObject(cacheObject)
+                },
+                CacheOptions = options
+            };
+
+            return await CreateUpdateItem(region, item);
+        }
+
+        #endregion
+
+        // todo remove after Dec
+        #region Add obsolete
+
+        /// <summary>
         /// Adds the specified cache key.
         /// </summary>
         /// <param name="cacheKey">The cache key.</param>
@@ -125,6 +279,7 @@ namespace CacheProvider.Mongo
         /// <param name="region"></param>
         /// <param name="expirationInMinutes"></param>
         /// <returns>True if successful else false.</returns>
+        [Obsolete("will be removed after December, use the other Add with options")]
         public override async Task<bool> Add(object cacheKey, object cacheObject, string region, int expirationInMinutes = 15)
         {
             if (!_isEnabled)
@@ -148,7 +303,6 @@ namespace CacheProvider.Mongo
             };
 
             return await CreateUpdateItem(region, item);
-
         }
 
         /// <summary>
@@ -160,6 +314,7 @@ namespace CacheProvider.Mongo
         /// <param name="allowSliddingTime"></param>
         /// <param name="expirationInMinutes"></param>
         /// <returns></returns>
+        [Obsolete("will be removed after December, use the other Add with options")]
         public override async Task<bool> Add(object cacheKey, object cacheObject, string region, bool allowSliddingTime, int expirationInMinutes = 15)
         {
             if (!_isEnabled)
@@ -188,7 +343,7 @@ namespace CacheProvider.Mongo
 
             return await CreateUpdateItem(region, item);
         }
-        
+
         /// <summary>
         /// Adds something to the cache that will only be removed by manual deletion
         /// </summary>
@@ -196,6 +351,7 @@ namespace CacheProvider.Mongo
         /// <param name="cacheObject"></param>
         /// <param name="region"></param>
         /// <returns></returns>
+        [Obsolete("will be removed after December, use the other Add with options")]
         public override async Task<bool> AddPermanent(object cacheKey, object cacheObject, string region)
         {
             if (!_isEnabled)
@@ -219,6 +375,9 @@ namespace CacheProvider.Mongo
             return await CreateUpdateItem(region, item);
         }
 
+        #endregion
+
+        #region Remove
         /// <summary>
         /// removes an item from cache region
         /// </summary>
@@ -299,24 +458,11 @@ namespace CacheProvider.Mongo
 
             return true;
         }
-
-        /// <summary>
-        /// get the count of items in a cache region
-        /// </summary>
-        /// <param name="region"></param>
-        /// <returns></returns>
-        public override async Task<long> Count(string region)
-        {
-            if (!_isEnabled)
-            {
-                return 0;
-            }
-            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
-            return await Task.Factory.StartNew(() => mongoCollection.Count());
-        }
+        #endregion
 
         #region Helpers
-        private async Task<bool> CreateUpdateItem(string region, CacheItem item)
+       
+        private async Task<bool> CreateUpdateItem(string region, object item)
         {
             var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
 
@@ -325,20 +471,27 @@ namespace CacheProvider.Mongo
             return await MongoUtilities.VerifyReturnMessage(results);
         }
 
-        private async Task<CacheItem> GetItem(object cacheKey, string region)
+        private async Task<dynamic> GetItem(object cacheKey, string region)
         {
-            var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
-
-            var item = await Task.Factory.StartNew(() => mongoCollection.AsQueryable<CacheItem>()
+            var item = await Task.Factory.StartNew(() => MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString).AsQueryable<dynamic>()
                     .AsParallel()
                     .FirstOrDefault(x => x.CacheKey.Equals(cacheKey.ToString(), StringComparison.CurrentCultureIgnoreCase) && x.Expires > DateTime.UtcNow));
 
-            if (item == null || !item.AllowSliddingTime) return item;
-
-            item.Expires = DateTime.UtcNow.AddMinutes(_cacheExpirationTime);
-            await CreateUpdateItem(region, item);
+            if (item == null) return null;
+            
+            // todo can be removed after dec
+            if (GlobalUtilities.DoesPropertyExist(item, "AllowSliddingTime") || GlobalUtilities.DoesPropertyExist(item.CacheOptions.AllowSliddingTime, "AllowSliddingTime"))
+            {
+                await UpdateSliddingTime(region, item);
+            }
 
             return item;
+        }
+
+        private async Task<bool> UpdateSliddingTime(string region, dynamic item)
+        {
+            item.Expires = DateTime.UtcNow.AddMinutes(_cacheExpirationTime);
+           return await CreateUpdateItem(region, item);
         }
         #endregion
     }
