@@ -8,9 +8,10 @@ namespace CacheProvider.Model
         {
             AllowSliddingTime = false;
             ExpirationInMinutes = 15;
+            SkipProvider = new[] {string.Empty};
         }
         public bool AllowSliddingTime { get; set; }
         public int ExpirationInMinutes { get; set; }
-        public string Validator { get; set; }
+        public string[] SkipProvider { get; set; }
     }
 }
