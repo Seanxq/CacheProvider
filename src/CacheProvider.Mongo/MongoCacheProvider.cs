@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 using CacheProvider.Interface;
@@ -67,7 +68,7 @@ namespace CacheProvider.Mongo
             {
                 bool.TryParse(config["enable"], out _isEnabled);
             }
-
+            
             _mongoConnectionString = host.ToLower().StartsWith("mongodb://") ?
                 host : MongoUtilities.GetMongoDatabaseString(host, port, baseDbName);
         }
@@ -112,41 +113,7 @@ namespace CacheProvider.Mongo
             }
             return null;
         }
-
-        public override async Task<object> Get(object cacheKey, string region, string validationKey)
-        {
-            if (!_isEnabled)
-            {
-                return null;
-            }
-
-            object item = await GetItem(cacheKey, region);
-
-            if (item == null)
-            {
-                return null;
-            }
-
-            // todo remove after dec when obsolete methods are removed
-            var itemType = item.GetType();
-            if (itemType == typeof(CacheItem))
-            {
-                var obj = (CacheItem)item;
-                return await MemoryStreamHelper.DeserializeObject(obj.CacheObject);
-            }
-
-            if (itemType == typeof(MongoCachModel))
-            {
-                var obj1 = (MongoCachModel)item;
-
-                if (obj1.CacheObject.Validator == validationKey)
-                {
-                    return await MemoryStreamHelper.DeserializeObject(obj1.CacheObject.Item);
-                }
-            }
-            return null;
-        }
-
+        
         /// <summary>
         ///     Gets the specified cache key.
         /// </summary>
@@ -157,11 +124,6 @@ namespace CacheProvider.Mongo
         public override async Task<T> Get<T>(object cacheKey, string region)
         {
             return (T)await Get(cacheKey, region);
-        }
-
-        public override async Task<T> Get<T>(object cacheKey, string region, string validationKey)
-        {
-            return (T)await Get(cacheKey, region, validationKey);
         }
 
         /// <summary>
@@ -221,7 +183,6 @@ namespace CacheProvider.Mongo
                 Expires = expireTime,
                 CacheObject = new CacheObject
                 {
-                    Validator = options.Validator, 
                     Item = await MemoryStreamHelper.SerializeObject(cacheObject)
                 },
                 CacheOptions = options
@@ -257,7 +218,6 @@ namespace CacheProvider.Mongo
                 Expires = expireTime,
                 CacheObject = new CacheObject
                 {
-                    Validator = options.Validator,
                     Item = await MemoryStreamHelper.SerializeObject(cacheObject)
                 },
                 CacheOptions = options
@@ -461,7 +421,7 @@ namespace CacheProvider.Mongo
         #endregion
 
         #region Helpers
-       
+
         private async Task<bool> CreateUpdateItem(string region, object item)
         {
             var mongoCollection = MongoUtilities.InitializeMongoDatabase(region, _mongoConnectionString);
@@ -478,7 +438,7 @@ namespace CacheProvider.Mongo
                     .FirstOrDefault(x => x.CacheKey.Equals(cacheKey.ToString(), StringComparison.CurrentCultureIgnoreCase) && x.Expires > DateTime.UtcNow));
 
             if (item == null) return null;
-            
+
             // todo can be removed after dec
             if (GlobalUtilities.DoesPropertyExist(item, "AllowSliddingTime") || GlobalUtilities.DoesPropertyExist(item.CacheOptions.AllowSliddingTime, "AllowSliddingTime"))
             {
@@ -491,7 +451,7 @@ namespace CacheProvider.Mongo
         private async Task<bool> UpdateSliddingTime(string region, dynamic item)
         {
             item.Expires = DateTime.UtcNow.AddMinutes(_cacheExpirationTime);
-           return await CreateUpdateItem(region, item);
+            return await CreateUpdateItem(region, item);
         }
         #endregion
     }

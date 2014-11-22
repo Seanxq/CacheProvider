@@ -16,20 +16,11 @@ namespace CacheProvider
         {
             return null;
         }
-        public Task<object> Get(object cacheKey, string region, string validationKey)
-        {
-            return null;
-        }
 
         public Task<T> Get<T>(object cacheKey, string region)
         {
             return null;
         }
-        public Task<T> Get<T>(object cacheKey, string region, string validationKey)
-        {
-            return null;
-        }
-
         public Task<bool> Exist(object cacheKey, string region)
         {
             return Task.FromResult(false);

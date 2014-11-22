@@ -23,18 +23,7 @@ namespace CacheProvider.Interface
         ///     An object instance with the Cache Value corresponding to the entry if found, else null
         /// </returns>
         Task<object> Get(object cacheKey, string region);
-
-        /// <summary>
-        ///     Get from cache.
-        /// </summary>
-        /// <param name="cacheKey">The cache key.</param>
-        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
-        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
-        /// <returns>
-        ///     An object instance with the Cache Value corresponding to the entry if found, else null
-        /// </returns>
-        Task<object> Get(object cacheKey, string region, string validationKey);
-
+        
         /// <summary>
         ///     Gets the specified cache key.
         /// </summary>
@@ -43,17 +32,7 @@ namespace CacheProvider.Interface
         /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
         /// <returns>An Instance of T if the entry is found, else null.</returns>
         Task<T> Get<T>(object cacheKey, string region);
-        /// <summary>
-        ///     Get from cache.
-        /// </summary>
-        /// <param name="cacheKey">The cache key.</param>
-        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
-        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
-        /// <returns>
-        ///     An object instance with the Cache Value corresponding to the entry if found, else null
-        /// </returns>
-        Task<T> Get<T>(object cacheKey, string region, string validationKey);
-
+        
         /// <summary>
         /// Check if the item exist
         /// </summary>

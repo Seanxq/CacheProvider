@@ -108,51 +108,7 @@ namespace CacheProvider.Memory
             }
             return null;
         }
-
-        /// <summary>
-        ///     Get from cache.  (does not work with obsolete fields)
-        /// </summary>
-        /// <param name="cacheKey">The cache key.</param>
-        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
-        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
-        /// <returns>
-        ///     An object instance with the Cache Value corresponding to the entry if found, else null
-        /// </returns>
-        public override async Task<object> Get(object cacheKey, string region, string validationKey)
-        {
-            if (!_isEnabled)
-            {
-                return null;
-            }
-
-            object item;
-            lock (Sync)
-            {
-                item = _cache.Get(MemoryUtilities.CombinedKey(cacheKey, region));
-            }
-
-            if (item == null)
-            {
-                return null;
-            }
-
-            // todo remove after dec when obsolete methods are removed
-            if (item.GetType() == typeof(BaseModel))
-            {
-                var obj = (BaseModel)item;
-                return await MemoryStreamHelper.DeserializeObject(obj.CacheObject);
-            }
-
-            var obj1 = (CacheObject)item;
-
-            if (obj1.Validator == validationKey)
-            {
-                return await MemoryStreamHelper.DeserializeObject(obj1.Item);
-            }
-
-            return null;
-        }
-
+        
         /// <summary>
         ///     Gets the specified cache key. 
         /// </summary>
@@ -164,21 +120,7 @@ namespace CacheProvider.Memory
         {
             return (T) await Get(cacheKey, region);
         }
-
-        /// <summary>
-        ///     Get from cache. (does not work with obsolete fields)
-        /// </summary>
-        /// <param name="cacheKey">The cache key.</param>
-        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
-        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
-        /// <returns>
-        ///     An object instance with the Cache Value corresponding to the entry if found, else null
-        /// </returns>
-        public override async Task<T> Get<T>(object cacheKey, string region, string validationKey)
-        {
-            return (T)await Get(cacheKey, region, validationKey);
-        }
-
+        
         /// <summary>
         /// Check if the item exist
         /// </summary>
@@ -417,7 +359,6 @@ namespace CacheProvider.Memory
             var key = MemoryUtilities.CombinedKey(cacheKey, region);
             var cacheItem = new CacheObject
             {
-                Validator = cacheOptions.Validator,
                 Item = await MemoryStreamHelper.SerializeObject(cacheObject)
             };
             

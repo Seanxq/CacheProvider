@@ -14,12 +14,11 @@ namespace CacheProvider.Multi
     public class MultiCacheProvider : CacheProvider
     {
         private bool _isEnabled;
-        public readonly List<ICacheProvider> CacheProviders;
-        private ICacheProvider _masterCacheProvider;
+        private readonly List<ICacheProvider> _cacheProviders;
 
         public MultiCacheProvider()
         {
-            CacheProviders = new List<ICacheProvider>();
+            _cacheProviders = new List<ICacheProvider>();
         }
 
         #region init
@@ -78,18 +77,16 @@ namespace CacheProvider.Multi
                     case "memorycacheprovider":
                         var memoryProvider = new MemoryCacheProvider();
                         memoryProvider.Initialize(name, valueCollection);
-                        CacheProviders.Add(memoryProvider);
+                        _cacheProviders.Add(memoryProvider);
                         break;
 
                     case "mongocacheprovider":
                         var mongoProvider = new MongoCacheProvider();
                         mongoProvider.Initialize(name, valueCollection);
-                        CacheProviders.Add(mongoProvider);
+                        _cacheProviders.Add(mongoProvider);
                         break;
                 }
             }
-
-            _masterCacheProvider = CacheProviders.Last();
         }
         #endregion
 
@@ -101,39 +98,23 @@ namespace CacheProvider.Multi
                 return null;
             }
 
-            // heart beat check to see if this cache item first exist in the final cache.  
-            // this is protect in memory cache from becoming stagnant in a load balaance farm
-            // and all the in memory farm is old
-            if (await _masterCacheProvider.Exist(cacheKey, region))
+            foreach (var cp in _cacheProviders)
             {
-                foreach (var cp in CacheProviders)
+                dynamic obj = await cp.Get(cacheKey, region);
+                if (obj != null)
                 {
-                    var obj = await cp.Get(cacheKey, region);
-                    if (obj != null)
-                    {
                         return obj;
-                    }
                 }
             }
 
             return null;
         }
-
-        public override Task<object> Get(object cacheKey, string region, string validationKey)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         public override async Task<T> Get<T>(object cacheKey, string region)
         {
             return (T)await Get(cacheKey, region);
         }
-
-        public override Task<T> Get<T>(object cacheKey, string region, string validationKey)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         public override async Task<bool> Exist(object cacheKey, string region)
         {
             if (!_isEnabled)
@@ -141,7 +122,7 @@ namespace CacheProvider.Multi
                 return false;
             }
 
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 if (await cp.Exist(cacheKey, region))
                 {
@@ -160,7 +141,7 @@ namespace CacheProvider.Multi
             }
 
             long highCount = 0;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var count = await cp.Count(region);
                 if (highCount < count)
@@ -188,14 +169,9 @@ namespace CacheProvider.Multi
             {
                 return true;
             }
-
-            if (string.IsNullOrWhiteSpace(options.Validator))
-            {
-                options.Validator = Guid.NewGuid().ToString();
-            }
-
+            
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.Add(cacheKey, cacheObject, region, options);
                 if (!wasAdded)
@@ -221,14 +197,9 @@ namespace CacheProvider.Multi
             {
                 return true;
             }
-
-            if (string.IsNullOrWhiteSpace(options.Validator))
-            {
-                options.Validator = Guid.NewGuid().ToString();
-            }
-
+            
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.AddPermanent(cacheKey, cacheObject, region, options);
                 if (!wasAdded)
@@ -260,7 +231,7 @@ namespace CacheProvider.Multi
                 return true;
             }
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.Add(cacheKey, cacheObject, region, expirationInMinutes);
                 if (!wasAdded)
@@ -289,7 +260,7 @@ namespace CacheProvider.Multi
                 return true;
             }
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.Add(cacheKey, cacheObject, region, allowSliddingTime, expirationInMinutes);
                 if (!wasAdded)
@@ -316,7 +287,7 @@ namespace CacheProvider.Multi
                 return true;
             }
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.AddPermanent(cacheKey, cacheObject, region);
                 if (!wasAdded)
@@ -337,7 +308,7 @@ namespace CacheProvider.Multi
                 return true;
             }
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.Remove(cacheKey, region);
                 if (!wasAdded)
@@ -356,7 +327,7 @@ namespace CacheProvider.Multi
                 return true;
             }
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.RemoveAll();
                 if (!wasAdded)
@@ -375,7 +346,7 @@ namespace CacheProvider.Multi
                 return true;
             }
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.RemoveAll(region);
                 if (!wasAdded)
@@ -394,7 +365,7 @@ namespace CacheProvider.Multi
                 return true;
             }
             var returnValue = true;
-            foreach (var cp in CacheProviders)
+            foreach (var cp in _cacheProviders)
             {
                 var wasAdded = await cp.RemoveExpired(region);
                 if (!wasAdded)

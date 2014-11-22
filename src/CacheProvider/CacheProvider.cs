@@ -5,7 +5,7 @@ using CacheProvider.Interface;
 
 namespace CacheProvider
 {
-    public abstract class CacheProvider: ProviderBase, ICacheProvider
+    public abstract class CacheProvider : ProviderBase, ICacheProvider
     {
         /// <summary>
         ///     Get from cache.
@@ -17,17 +17,6 @@ namespace CacheProvider
         /// </returns>
         public abstract Task<object> Get(object cacheKey, string region);
         /// <summary>
-        ///     Get from cache. (does not work with obsolete fields)
-        /// </summary>
-        /// <param name="cacheKey">The cache key.</param>
-        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
-        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
-        /// <returns>
-        ///     An object instance with the Cache Value corresponding to the entry if found, else null
-        /// </returns>
-        public abstract Task<object> Get(object cacheKey, string region, string validationKey);
-
-        /// <summary>
         ///     Gets the specified cache key (Async).
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -35,17 +24,7 @@ namespace CacheProvider
         /// <param name="region"></param>
         /// <returns>An Instance of T if the entry is found, else null.</returns>
         public abstract Task<T> Get<T>(object cacheKey, string region);
-        /// <summary>
-        ///     Get from cache. (does not work with obsolete fields)
-        /// </summary>
-        /// <param name="cacheKey">The cache key.</param>
-        /// <param name="region">If region is supported by cache , it will seperate the lookups</param>
-        /// <param name="validationKey">A validation key can used to verify if the object is correct.  Used in Multi cache to help keep them in sync</param>
-        /// <returns>
-        ///     An object instance with the Cache Value corresponding to the entry if found, else null
-        /// </returns>
-        public abstract Task<T> Get<T>(object cacheKey, string region, string validationKey);
-
+        
         /// <summary>
         /// Check if the item exist
         /// </summary>
@@ -112,7 +91,7 @@ namespace CacheProvider
         [Obsolete("will be removed after December, use the other AddPermanent overload")]
         public abstract Task<bool> AddPermanent(object cacheKey, object cacheObject, string region);
         #endregion
-        
+
         /// <summary>
         ///     Remove from cache.
         /// </summary>

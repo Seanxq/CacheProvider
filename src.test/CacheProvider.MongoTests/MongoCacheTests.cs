@@ -109,20 +109,7 @@ namespace CacheProvider.MongoTests
             var item = await _cacheProvider.Get(key, region);
             Assert.AreEqual(item, cacheObject);
         }
-
-        [TestMethod]
-        public async Task AddAndGetValidationPassTest()
-        {
-            _cacheProvider.Initialize("test", _enabledSettings);
-            const string key = "TestKey";
-            const string region = "FirstRegion";
-            const string cacheObject = "test";
-            var validationKey = Guid.NewGuid().ToString();
-            Assert.IsTrue(await _cacheProvider.Add(key, cacheObject, region, new CacheOptions { Validator = validationKey }));
-            var item = await _cacheProvider.Get(key, region, validationKey);
-            Assert.AreEqual(item, cacheObject);
-        }
-
+        
         [TestMethod]
         public async Task AddSliderTest()
         {
