@@ -48,6 +48,14 @@ namespace CacheProvider.Interface
         #endregion
 
         #region Add
+        /// <summary>
+        ///     Add to cache.
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region"></param>
+        /// <returns>True if successful else false.</returns>
+        Task<bool> Add(object cacheKey, object cacheObject, string region);
 
         /// <summary>
         ///     Add to cache.

@@ -27,6 +27,12 @@ namespace CacheProvider
         }
 
         #region Add
+
+        public Task<bool> Add(object cacheKey, object cacheObject, string region)
+        {
+            return Task.FromResult(true);
+        }
+
         public Task<bool> Add(object cacheKey, object cacheObject, string region, ICacheOptions options)
         {
             return Task.FromResult(true);

@@ -153,6 +153,19 @@ namespace CacheProvider.Mongo
         #endregion
 
         #region Add
+
+        /// <summary>
+        ///     Add to cache.
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region"></param>
+        /// <returns>True if successful else false.</returns>
+        public override async Task<bool> Add(object cacheKey, object cacheObject, string region)
+        {
+            return await Add(cacheKey, cacheObject, region, new CacheOptions());
+        }
+
         /// <summary>
         ///     Add to cache.
         /// </summary>

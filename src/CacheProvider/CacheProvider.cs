@@ -35,6 +35,15 @@ namespace CacheProvider
 
         #region Add
         /// <summary>
+        ///     Add to cache.
+        /// </summary>
+        /// <param name="cacheKey">The cache key.</param>
+        /// <param name="cacheObject">The cache object.</param>
+        /// <param name="region"></param>
+        /// <returns>True if successful else false.</returns>
+        public abstract Task<bool> Add(object cacheKey, object cacheObject, string region);
+
+        /// <summary>
         ///     Add an item to the cache and will need to be removed manually
         /// </summary>
         /// <param name="cacheKey">The cache key.</param>
