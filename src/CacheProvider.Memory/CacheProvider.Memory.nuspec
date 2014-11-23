@@ -2,13 +2,13 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>CacheProvider.Memory</id>
-    <version>1.1</version>
+    <version>1.2</version>
     <title>CacheProvider.Memory</title>
     <authors>Chad England</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <projectUrl>https://github.com/chadit/CacheProvider</projectUrl>
     <description>Cache Provider that utilizes .NET MemoryCache</description>
-    <releaseNotes>Fixed a bug with getting an item that does not exist</releaseNotes>
+    <releaseNotes>Added Cache Options and obsoleted some older methods.  See github for full readup</releaseNotes>
     <language>en-US</language>
   </metadata>
   <files>
