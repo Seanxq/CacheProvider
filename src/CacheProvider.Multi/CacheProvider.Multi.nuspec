@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>CacheProvider.Multi</id>
+    <version>1.0</version>
+    <title>CacheProvider.Multi</title>
+    <authors>Chad England</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://github.com/chadit/CacheProvider</projectUrl>
+    <description>Cache Provider that allows you to utilize multiple levels of the cache providers. &#10;
+           In order to utilize this install 1 or more of the other CacheProviders</description>
+    <releaseNotes>See github for full readup</releaseNotes>
+    <language>en-US</language>
+    <dependencies>
+     
+    </dependencies>    
+  </metadata>
+  <files>
+    <file src="..\..\dist\CacheProvider.dll" target="lib\net45\CacheProvider.dll" />
+    <file src="..\..\dist\CacheProvider.Multi.dll" target="lib\net45\CacheProvider.Multi.dll" />
+  </files>
+</package>
