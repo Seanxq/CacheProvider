@@ -58,6 +58,15 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if $(ConfigurationName) == Debug copy "$(ProjectDir)bin\Debug\CacheProvider.Multi.dll" "$(SolutionDir)dist"
+if $(ConfigurationName) == Release copy "$(ProjectDir)bin\Release\CacheProvider.Multi.dll" "$(SolutionDir)dist"
+"$(SolutionDir).nuget\NuGet.exe" pack "$(SolutionDir)src\CacheProvider.Multi\CacheProvider.Multi.nuspec"
+if $(ConfigurationName) == Debug copy "$(ProjectDir)bin\Debug\*.nupkg" "$(SolutionDir)dist"
+if $(ConfigurationName) == Release copy "$(ProjectDir)bin\Release\*.nupkg" "$(SolutionDir)dist"
+if $(ConfigurationName) == Debug del  "$(ProjectDir)bin\Debug\*.nupkg"
+if $(ConfigurationName) == Release del  "$(ProjectDir)bin\Release\*.nupkg"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
